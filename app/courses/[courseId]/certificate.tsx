@@ -94,6 +94,9 @@ export default function CertificateScreen() {
         return
       }
 
+      // Wait a moment to ensure view is fully rendered
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       // Capture the certificate as image
       if (certificateRef.current) {
         const uri = await captureRef(certificateRef.current, {
@@ -105,6 +108,10 @@ export default function CertificateScreen() {
         await MediaLibrary.createAssetAsync(uri)
 
         Alert.alert('Success!', 'Certificate saved to your photo gallery.', [
+          { text: 'OK' },
+        ])
+      } else {
+        Alert.alert('Error', 'Certificate view not ready. Please try again.', [
           { text: 'OK' },
         ])
       }
@@ -181,7 +188,11 @@ export default function CertificateScreen() {
         </View>
 
         {/* Certificate */}
-        <View style={styles.certificateContainer} ref={certificateRef}>
+        <View
+          style={styles.certificateContainer}
+          ref={certificateRef}
+          collapsable={false}
+        >
           <Certificate
             courseName={course.title}
             completionDate={completionDate}
