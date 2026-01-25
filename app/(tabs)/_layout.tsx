@@ -1,11 +1,11 @@
-import { Tabs } from 'expo-router'
+import { Stack } from 'expo-router'
 import React from 'react'
 
 const TabsLayout = () => {
   return (
-    <Tabs>
-      <Tabs.Screen name="index" options={{ headerShown: false }} />
-    </Tabs>
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+    </Stack>
   )
 }
 
