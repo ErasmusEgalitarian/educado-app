@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type Phase = 'video' | 'questions' | 'results'
 
@@ -29,6 +30,7 @@ export default function SectionScreen() {
   }>()
   const router = useRouter()
   const colors = AppColors()
+  const insets = useSafeAreaInsets()
 
   const course = getCourseById(courseId)
   const section = getSectionById(courseId, sectionId)
@@ -45,7 +47,7 @@ export default function SectionScreen() {
       <View
         style={[
           styles.container,
-          { backgroundColor: colors.backgroundSecondary },
+          { backgroundColor: colors.backgroundPrimary },
         ]}
       >
         <Text style={{ color: colors.textPrimary }}>Section not found</Text>
@@ -130,20 +132,15 @@ export default function SectionScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.backgroundSecondary },
-      ]}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}
-      <View
-        style={[styles.header, { backgroundColor: colors.backgroundPrimary }]}
-      >
+      <View style={[styles.header, { backgroundColor: colors.cardBackground }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text
           style={[styles.headerTitle, { color: colors.textPrimary }]}
@@ -156,45 +153,58 @@ export default function SectionScreen() {
 
       {/* Content */}
       {phase === 'video' && (
-        <View style={styles.content}>
-          <VideoPlayer
-            videoUrl={section.videoUrl}
-            onProgressUpdate={handleVideoProgress}
-            minimumWatchPercentage={80}
-          />
+        <>
+          <ScrollView
+            style={styles.videoContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <VideoPlayer
+              videoUrl={section.videoUrl}
+              onProgressUpdate={handleVideoProgress}
+              minimumWatchPercentage={80}
+            />
 
-          <View style={styles.videoInfo}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              {section.title}
-            </Text>
-            <Text
-              style={[
-                styles.sectionDescription,
-                { color: colors.textSecondary },
-              ]}
-            >
-              Watch the video to learn about this topic. You'll need to watch at
-              least 80% before answering questions.
-            </Text>
-
-            <View style={styles.questionsInfo}>
-              <Ionicons
-                name="help-circle-outline"
-                size={20}
-                color={colors.textSecondary}
-              />
+            <View style={styles.videoInfo}>
               <Text
-                style={[styles.questionsText, { color: colors.textSecondary }]}
+                style={[styles.sectionTitle, { color: colors.textPrimary }]}
               >
-                {section.questions.length} questions to answer after video
+                {section.title}
               </Text>
+              <Text
+                style={[
+                  styles.sectionDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Watch the video to learn about this topic. You'll need to watch
+                at least 80% before answering questions.
+              </Text>
+
+              <View style={styles.questionsInfo}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text
+                  style={[
+                    styles.questionsText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {section.questions.length} questions to answer after video
+                </Text>
+              </View>
             </View>
-          </View>
+          </ScrollView>
 
           <View
             style={[
               styles.footer,
-              { backgroundColor: colors.backgroundPrimary },
+              {
+                backgroundColor: colors.cardBackground,
+                paddingBottom: Math.max(insets.bottom, 24),
+              },
             ]}
           >
             <ButtonPrimary
@@ -210,25 +220,28 @@ export default function SectionScreen() {
               </Text>
             )}
           </View>
-        </View>
+        </>
       )}
 
       {phase === 'questions' && (
-        <ScrollView
-          style={styles.questionsContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <QuestionCard
-            question={section.questions[currentQuestionIndex]}
-            onAnswer={handleAnswer}
-            currentQuestion={currentQuestionIndex + 1}
-            totalQuestions={section.questions.length}
-          />
-        </ScrollView>
+        <View style={styles.questionsContainer}>
+          <ScrollView
+            style={styles.questionsScroll}
+            contentContainerStyle={styles.questionsScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <QuestionCard
+              question={section.questions[currentQuestionIndex]}
+              onAnswer={handleAnswer}
+              currentQuestion={currentQuestionIndex + 1}
+              totalQuestions={section.questions.length}
+            />
+          </ScrollView>
+        </View>
       )}
 
       {phase === 'results' && (
-        <View style={styles.resultsContainer}>
+        <>
           <ScrollView
             contentContainerStyle={styles.resultsContent}
             showsVerticalScrollIndicator={false}
@@ -237,7 +250,7 @@ export default function SectionScreen() {
               <Ionicons
                 name={scorePercentage >= 70 ? 'trophy' : 'ribbon'}
                 size={64}
-                color={scorePercentage >= 70 ? colors.success : colors.warning}
+                color={scorePercentage >= 70 ? colors.primary : colors.warning}
               />
               <Text
                 style={[styles.scorePercentage, { color: colors.textPrimary }]}
@@ -268,7 +281,7 @@ export default function SectionScreen() {
                     style={[
                       styles.resultItem,
                       {
-                        backgroundColor: colors.backgroundPrimary,
+                        backgroundColor: colors.cardBackground,
                         borderColor: colors.border,
                       },
                     ]}
@@ -305,7 +318,10 @@ export default function SectionScreen() {
           <View
             style={[
               styles.footer,
-              { backgroundColor: colors.backgroundPrimary },
+              {
+                backgroundColor: colors.cardBackground,
+                paddingBottom: Math.max(insets.bottom, 24),
+              },
             ]}
           >
             <ButtonPrimary
@@ -313,10 +329,10 @@ export default function SectionScreen() {
               onPress={handleCompleteSection}
               icon="arrow-forward"
               fullWidth
-              variant="success"
+              variant="primary"
             />
           </View>
-        </View>
+        </>
       )}
     </View>
   )
@@ -358,11 +374,12 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 44,
   },
-  content: {
+  videoContent: {
     flex: 1,
   },
   videoInfo: {
     padding: 24,
+    paddingBottom: 120,
   },
   sectionTitle: {
     fontSize: 24,
@@ -383,8 +400,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 24,
-    paddingBottom: 40,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -402,12 +422,15 @@ const styles = StyleSheet.create({
   questionsContainer: {
     flex: 1,
   },
-  resultsContainer: {
+  questionsScroll: {
     flex: 1,
+  },
+  questionsScrollContent: {
+    paddingBottom: 140,
   },
   resultsContent: {
     padding: 24,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   scoreCircle: {
     width: 160,

@@ -4,15 +4,19 @@ export const AppColors = () => ({
   background: '#fff',
 
   // Educational platform palette
-  primary: '#4CAF50', // Green - represents growth/learning
-  secondary: '#2196F3', // Blue - trust
+  primary: '#35A1B1', // Main teal color
+  primaryDark: '#246670', // Darker teal
+  primaryLight: '#D8EFF3', // Light teal background
+  secondary: '#2398F3', // Blue - trust
+  tertiary: '#7B8794', // Gray-blue for secondary actions
   success: '#66BB6A', // Light green
   warning: '#FFA726', // Orange
   error: '#EF5350', // Red
 
   // Backgrounds
-  backgroundPrimary: '#FFFFFF',
-  backgroundSecondary: '#F5F5F5',
+  backgroundPrimary: '#FAFEFF', // Main app background
+  backgroundSecondary: '#FAFEFF', // Secondary background (same as primary)
+  cardBackground: '#FDFEFF', // Card background
 
   // Text colors
   textPrimary: '#212121',
@@ -24,11 +28,11 @@ export const AppColors = () => ({
   borderLight: '#F5F5F5',
 
   // Progress colors
-  progressComplete: '#4CAF50',
+  progressComplete: '#35A1B1',
   progressIncomplete: '#E0E0E0',
 
   // Status colors
   locked: '#BDBDBD',
-  completed: '#4CAF50',
-  inProgress: '#2196F3',
+  completed: '#35A1B1',
+  inProgress: '#35A1B1',
 })

@@ -1,5 +1,5 @@
-import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import Certificate from '@/components/Certificate/Certificate'
+import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
 import { getCourseById } from '@/data/mock-data'
 import {
@@ -9,6 +9,7 @@ import {
   saveCertificate,
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
+import * as MediaLibrary from 'expo-media-library'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -20,7 +21,6 @@ import {
   View,
 } from 'react-native'
 import { captureRef } from 'react-native-view-shot'
-import * as MediaLibrary from 'expo-media-library'
 
 export default function CertificateScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>()
@@ -127,7 +127,7 @@ export default function CertificateScreen() {
       <View
         style={[
           styles.container,
-          { backgroundColor: colors.backgroundSecondary },
+          { backgroundColor: colors.backgroundPrimary },
         ]}
       >
         <Text style={{ color: colors.textPrimary }}>Course not found</Text>
@@ -137,20 +137,15 @@ export default function CertificateScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.backgroundSecondary },
-      ]}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}
-      <View
-        style={[styles.header, { backgroundColor: colors.backgroundPrimary }]}
-      >
+      <View style={[styles.header, { backgroundColor: colors.cardBackground }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={handleBackToCourses}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Your Certificate
@@ -167,14 +162,12 @@ export default function CertificateScreen() {
           <View
             style={[
               styles.celebrationBadge,
-              { backgroundColor: colors.success },
+              { backgroundColor: colors.primary },
             ]}
           >
             <Ionicons name="trophy" size={64} color={colors.textLight} />
           </View>
-          <Text
-            style={[styles.celebrationTitle, { color: colors.textPrimary }]}
-          >
+          <Text style={[styles.celebrationTitle, { color: colors.primary }]}>
             Congratulations!
           </Text>
           <Text
@@ -205,7 +198,7 @@ export default function CertificateScreen() {
             icon="download"
             fullWidth
             loading={isDownloading}
-            variant="success"
+            variant="primary"
           />
 
           <View style={styles.actionSpacing} />
@@ -215,7 +208,7 @@ export default function CertificateScreen() {
             onPress={handleBackToCourses}
             icon="home"
             fullWidth
-            variant="secondary"
+            variant="tertiary"
           />
         </View>
 
@@ -223,7 +216,7 @@ export default function CertificateScreen() {
         <View
           style={[
             styles.messageBox,
-            { backgroundColor: colors.backgroundPrimary },
+            { backgroundColor: colors.cardBackground },
           ]}
         >
           <Ionicons name="sparkles" size={24} color={colors.primary} />

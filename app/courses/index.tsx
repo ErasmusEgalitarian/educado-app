@@ -35,27 +35,24 @@ export default function CoursesScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.backgroundSecondary },
-      ]}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
-      <View
-        style={[styles.header, { backgroundColor: colors.backgroundPrimary }]}
-      >
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          Your Courses
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          Choose a course to continue learning
-        </Text>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            Your Courses
+          </Text>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          >
+            Choose a course to continue learning
+          </Text>
+        </View>
+
         {mockCourses.map((course) => (
           <CourseCard
             key={course.id}
@@ -76,15 +73,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 60,
     paddingBottom: 20,
-    paddingHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: 0,
   },
   headerTitle: {
     fontSize: 32,

@@ -277,10 +277,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    backgroundColor: '#fff',
+    backgroundColor: '#FDFEFF',
   },
   selectedAnswer: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#D8EFF3',
   },
   answerContent: {
     flexDirection: 'row',

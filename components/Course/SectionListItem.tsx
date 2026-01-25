@@ -62,7 +62,7 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: colors.backgroundPrimary,
+          backgroundColor: colors.cardBackground,
           borderColor: colors.border,
         },
         isLocked && styles.locked,
