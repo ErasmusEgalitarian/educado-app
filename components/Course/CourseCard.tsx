@@ -26,22 +26,22 @@ const CourseCard: React.FC<CourseCardProps> = ({
     onPress()
   }
 
-  const getDifficultyColor = () => {
+  const getDifficultyIcon = () => {
     switch (course.difficulty) {
       case 'beginner':
-        return colors.success
+        return 'leaf-outline'
       case 'intermediate':
-        return colors.warning
+        return 'bar-chart-outline'
       case 'advanced':
-        return colors.error
+        return 'trophy-outline'
       default:
-        return colors.textSecondary
+        return 'information-circle-outline'
     }
   }
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.backgroundPrimary }]}
+      style={[styles.card, { backgroundColor: colors.cardBackground }]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
@@ -51,17 +51,6 @@ const CourseCard: React.FC<CourseCardProps> = ({
           style={styles.image}
           contentFit="cover"
         />
-        <View
-          style={[
-            styles.difficultyBadge,
-            { backgroundColor: getDifficultyColor() },
-          ]}
-        >
-          <Text style={styles.difficultyText}>
-            {course.difficulty.charAt(0).toUpperCase() +
-              course.difficulty.slice(1)}
-          </Text>
-        </View>
       </View>
 
       <View style={styles.content}>
@@ -105,6 +94,20 @@ const CourseCard: React.FC<CourseCardProps> = ({
               {course.estimatedTime}
             </Text>
           </View>
+
+          <View style={styles.metadataItem}>
+            <Ionicons
+              name={getDifficultyIcon()}
+              size={20}
+              color={colors.textSecondary}
+            />
+            <Text
+              style={[styles.metadataText, { color: colors.textSecondary }]}
+            >
+              {course.difficulty.charAt(0).toUpperCase() +
+                course.difficulty.slice(1)}
+            </Text>
+          </View>
         </View>
 
         {progress > 0 && (
@@ -135,11 +138,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   imageContainer: {
     width: '100%',
@@ -149,19 +152,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-  },
-  difficultyBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  difficultyText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
   },
   content: {
     padding: 16,

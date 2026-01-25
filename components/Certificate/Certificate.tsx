@@ -21,10 +21,7 @@ const Certificate: React.FC<CertificateProps> = ({
 
   return (
     <View
-      style={[
-        styles.certificate,
-        { backgroundColor: colors.backgroundPrimary },
-      ]}
+      style={[styles.certificate, { backgroundColor: colors.cardBackground }]}
     >
       {/* Decorative corners */}
       <View
@@ -55,7 +52,7 @@ const Certificate: React.FC<CertificateProps> = ({
       {/* Content */}
       <View style={styles.content}>
         {/* Badge */}
-        <View style={[styles.badge, { backgroundColor: colors.success }]}>
+        <View style={[styles.badge, { backgroundColor: colors.primary }]}>
           <Ionicons name="trophy" size={48} color={colors.textLight} />
         </View>
 
@@ -70,7 +67,7 @@ const Certificate: React.FC<CertificateProps> = ({
         </Text>
 
         {/* User name */}
-        <Text style={[styles.userName, { color: colors.textPrimary }]}>
+        <Text style={[styles.userName, { color: colors.primaryDark }]}>
           {userName}
         </Text>
 
@@ -80,19 +77,20 @@ const Certificate: React.FC<CertificateProps> = ({
         </Text>
 
         {/* Course name */}
-        <Text style={[styles.courseName, { color: colors.textPrimary }]}>
+        <Text style={[styles.courseName, { color: colors.primary }]}>
           {courseName}
         </Text>
 
         {/* Course details */}
         <View style={styles.detailsContainer}>
-          <View style={styles.detailItem}>
-            <Ionicons
-              name="book-outline"
-              size={20}
-              color={colors.textSecondary}
-            />
-            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+          <View
+            style={[
+              styles.detailItem,
+              { backgroundColor: colors.primaryLight },
+            ]}
+          >
+            <Ionicons name="book-outline" size={20} color={colors.primary} />
+            <Text style={[styles.detailText, { color: colors.primaryDark }]}>
               {totalSections} sections completed
             </Text>
           </View>
@@ -104,8 +102,10 @@ const Certificate: React.FC<CertificateProps> = ({
         </Text>
 
         {/* Signature line */}
-        <View style={[styles.signatureLine, { borderTopColor: colors.border }]}>
-          <Text style={[styles.signatureText, { color: colors.textSecondary }]}>
+        <View
+          style={[styles.signatureLine, { borderTopColor: colors.primary }]}
+        >
+          <Text style={[styles.signatureText, { color: colors.primaryDark }]}>
             Educado Learning Platform
           </Text>
         </View>
@@ -214,9 +214,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   detailText: {
     fontSize: 14,
+    fontWeight: '600',
   },
   date: {
     fontSize: 14,

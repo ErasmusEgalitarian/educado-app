@@ -13,9 +13,7 @@ export default function Index() {
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.primaryLight }]}>
       <View style={styles.content}>
         <Image
           source={require('@/assets/images/logo_black240.png')}

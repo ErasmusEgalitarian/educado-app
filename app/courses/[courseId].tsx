@@ -137,7 +137,7 @@ export default function CourseDetailScreen() {
       <View
         style={[
           styles.container,
-          { backgroundColor: colors.backgroundSecondary },
+          { backgroundColor: colors.backgroundPrimary },
         ]}
       >
         <Text style={{ color: colors.textPrimary }}>Course not found</Text>
@@ -165,7 +165,7 @@ export default function CourseDetailScreen() {
           <TouchableOpacity
             style={[
               styles.backButton,
-              { backgroundColor: colors.backgroundPrimary },
+              { backgroundColor: colors.cardBackground },
             ]}
             onPress={() => router.back()}
           >
@@ -317,7 +317,7 @@ export default function CourseDetailScreen() {
         style={[
           styles.footer,
           {
-            backgroundColor: colors.backgroundPrimary,
+            backgroundColor: colors.cardBackground,
             paddingBottom: Math.max(insets.bottom, 24),
           },
         ]}
@@ -337,7 +337,7 @@ export default function CourseDetailScreen() {
           }
           icon={isCompleted && hasPassed ? 'ribbon' : 'play'}
           fullWidth
-          variant={isCompleted && hasPassed ? 'success' : 'primary'}
+          variant="primary"
         />
       </View>
     </View>
@@ -402,15 +402,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   progressSection: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
+    marginBottom: 24,
   },
   progressTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   description: {
     fontSize: 16,

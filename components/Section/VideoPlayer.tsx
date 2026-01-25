@@ -89,10 +89,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   if (error) {
     return (
       <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.backgroundSecondary },
-        ]}
+        style={[styles.container, { backgroundColor: colors.primaryLight }]}
       >
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>
@@ -120,7 +117,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <View
           style={[
             styles.loadingOverlay,
-            { backgroundColor: colors.backgroundSecondary },
+            { backgroundColor: colors.primaryLight },
           ]}
         >
           <ActivityIndicator size="large" color={colors.primary} />
