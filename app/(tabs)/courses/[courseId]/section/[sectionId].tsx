@@ -111,17 +111,17 @@ export default function SectionScreen() {
 
       if (passed) {
         // User passed - show certificate
-        router.replace(`/courses/${courseId}/certificate`)
+        router.replace(`/(tabs)/courses/${courseId}/certificate`)
       } else {
         // User completed but didn't pass - go back to course details
-        router.replace(`/courses/${courseId}`)
+        router.replace(`/(tabs)/courses/${courseId}`)
       }
     } else if (nextSection) {
       // Go to next section
-      router.replace(`/courses/${courseId}/section/${nextSection.id}`)
+      router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
     } else {
       // Go back to course details
-      router.replace(`/courses/${courseId}`)
+      router.replace(`/(tabs)/courses/${courseId}`)
     }
   }
 

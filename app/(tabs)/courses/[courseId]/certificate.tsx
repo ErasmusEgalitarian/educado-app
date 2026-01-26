@@ -48,7 +48,12 @@ export default function CertificateScreen() {
       Alert.alert(
         'Certificate Not Available',
         `You need to score at least ${course.passingThreshold}% to earn a certificate.`,
-        [{ text: 'OK', onPress: () => router.replace(`/courses/${courseId}`) }]
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace(`/(tabs)/courses/${courseId}`),
+          },
+        ]
       )
       return
     }
@@ -126,7 +131,7 @@ export default function CertificateScreen() {
   }
 
   const handleBackToCourses = () => {
-    router.push('/courses')
+    router.push('/(tabs)')
   }
 
   if (!course) {

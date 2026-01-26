@@ -1,35 +1,67 @@
-import ButtonPrimary from '@/components/Common/ButtonPrimary'
+import CourseCard from '@/components/Course/CourseCard'
 import { AppColors } from '@/constants/theme/AppColors'
-import { Image } from 'expo-image'
+import { mockCourses } from '@/data/mock-data'
+import { getCourseCompletionPercentage } from '@/utils/progress-storage'
 import { useRouter } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
-export default function Index() {
+export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
+  const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
+    {}
+  )
 
-  const handleContinue = () => {
-    router.push('/courses')
+  useEffect(() => {
+    loadProgress()
+  }, [])
+
+  const loadProgress = async () => {
+    const progress: Record<string, number> = {}
+    for (const course of mockCourses) {
+      const percentage = await getCourseCompletionPercentage(
+        course.id,
+        course.sections.length
+      )
+      progress[course.id] = percentage
+    }
+    setCourseProgress(progress)
+  }
+
+  const handleCoursePress = (courseId: string) => {
+    router.push(`/(tabs)/courses/${courseId}`)
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.primaryLight }]}>
-      <View style={styles.content}>
-        <Image
-          source={require('@/assets/images/logo_black240.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
-      </View>
+    <View
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            Your Courses
+          </Text>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+          >
+            Choose a course to continue learning
+          </Text>
+        </View>
 
-      <View style={styles.buttonContainer}>
-        <ButtonPrimary
-          title="Continue"
-          onPress={handleContinue}
-          icon="arrow-forward"
-          fullWidth
-        />
-      </View>
+        {mockCourses.map((course) => (
+          <CourseCard
+            key={course.id}
+            course={course}
+            onPress={() => handleCoursePress(course.id)}
+            progress={courseProgress[course.id] || 0}
+          />
+        ))}
+      </ScrollView>
     </View>
   )
 }
@@ -38,18 +70,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 0,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+  },
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
   },
-  logo: {
-    width: 240,
-    height: 240,
-  },
-  buttonContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+  scrollContent: {
+    padding: 24,
   },
 })

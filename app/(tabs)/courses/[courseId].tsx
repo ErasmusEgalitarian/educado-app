@@ -99,7 +99,7 @@ export default function CourseDetailScreen() {
       course.sections.map((s) => s.id)
     )
 
-    router.push(`/courses/${courseId}/section/${firstIncompleteId}`)
+    router.push(`/(tabs)/courses/${courseId}/section/${firstIncompleteId}`)
   }
 
   const handleSectionPress = async (
@@ -122,7 +122,7 @@ export default function CourseDetailScreen() {
       }
     }
 
-    router.push(`/courses/${courseId}/section/${sectionId}`)
+    router.push(`/(tabs)/courses/${courseId}/section/${sectionId}`)
   }
 
   const isSectionLocked = (sectionIndex: number): boolean => {
@@ -332,7 +332,7 @@ export default function CourseDetailScreen() {
           }
           onPress={
             isCompleted && hasPassed
-              ? () => router.push(`/courses/${courseId}/certificate`)
+              ? () => router.push(`/(tabs)/courses/${courseId}/certificate`)
               : handleStartCourse
           }
           icon={isCompleted && hasPassed ? 'ribbon' : 'play'}
