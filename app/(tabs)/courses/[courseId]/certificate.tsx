@@ -29,7 +29,6 @@ export default function CertificateScreen() {
   const router = useRouter()
   const colors = AppColors()
   const certificateRef = useRef<View>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
@@ -155,6 +154,7 @@ export default function CertificateScreen() {
 
   return (
     <View
+      key={currentLanguage}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}

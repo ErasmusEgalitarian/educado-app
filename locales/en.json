@@ -33,6 +33,7 @@
   "profile": {
     "title": "Your Certificates",
     "noCertificates": "No certificates yet. Complete a course to earn your first certificate!",
+    "certificatesEarned": "{{count}} certificate(s) earned",
     "certificatesEarned_one": "{{count}} certificate earned",
     "certificatesEarned_other": "{{count}} certificates earned",
     "settings": "Settings",

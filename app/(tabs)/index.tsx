@@ -11,7 +11,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
     {}
@@ -39,6 +38,7 @@ export default function CoursesScreen() {
 
   return (
     <View
+      key={currentLanguage}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       <ScrollView
