@@ -1,6 +1,8 @@
 import CourseCard from '@/components/Course/CourseCard'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { mockCourses } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import { getCourseCompletionPercentage } from '@/utils/progress-storage'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -9,6 +11,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
+  const { currentLanguage } = useLanguage()
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
     {}
   )
@@ -35,6 +38,7 @@ export default function CoursesScreen() {
 
   return (
     <View
+      key={currentLanguage}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       <ScrollView
@@ -44,12 +48,12 @@ export default function CoursesScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Your Courses
+            {t('home.title')}
           </Text>
           <Text
             style={[styles.headerSubtitle, { color: colors.textSecondary }]}
           >
-            Choose a course to continue learning
+            {t('home.subtitle')}
           </Text>
         </View>
 

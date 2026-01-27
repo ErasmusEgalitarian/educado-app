@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { formatLongDate } from '@/utils/formatters'
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
@@ -58,12 +59,12 @@ const Certificate: React.FC<CertificateProps> = ({
 
         {/* Title */}
         <Text style={[styles.certificateTitle, { color: colors.primary }]}>
-          CERTIFICATE OF COMPLETION
+          {t('certificate.title')}
         </Text>
 
         {/* Subtitle */}
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          This is to certify that
+          {t('certificate.certifies')}
         </Text>
 
         {/* User name */}
@@ -73,7 +74,7 @@ const Certificate: React.FC<CertificateProps> = ({
 
         {/* Achievement text */}
         <Text style={[styles.achievementText, { color: colors.textSecondary }]}>
-          has successfully completed the course
+          {t('certificate.completed')}
         </Text>
 
         {/* Course name */}
@@ -91,14 +92,14 @@ const Certificate: React.FC<CertificateProps> = ({
           >
             <Ionicons name="book-outline" size={20} color={colors.primary} />
             <Text style={[styles.detailText, { color: colors.primaryDark }]}>
-              {totalSections} sections completed
+              {totalSections} {t('common.sections')} {t('common.completed')}
             </Text>
           </View>
         </View>
 
         {/* Date */}
         <Text style={[styles.date, { color: colors.textSecondary }]}>
-          Completed on {formatLongDate(completionDate)}
+          {t('certificate.date')}: {formatLongDate(completionDate)}
         </Text>
 
         {/* Signature line */}

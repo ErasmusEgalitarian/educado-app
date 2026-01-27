@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
@@ -42,7 +43,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       </View>
       {showLabel && (
         <Text style={[styles.label, { color: colors.textSecondary }]}>
-          {Math.round(percentage)}% Complete
+          {Math.round(percentage)}% {t('common.complete')}
         </Text>
       )}
     </View>

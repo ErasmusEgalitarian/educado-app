@@ -1,5 +1,7 @@
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { t } from '@/i18n/config'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
@@ -7,13 +9,17 @@ import { StyleSheet, View } from 'react-native'
 export default function Index() {
   const router = useRouter()
   const colors = AppColors()
+  const { currentLanguage } = useLanguage()
 
   const handleContinue = () => {
     router.push('/(tabs)')
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.primaryLight }]}>
+    <View
+      key={currentLanguage}
+      style={[styles.container, { backgroundColor: colors.primaryLight }]}
+    >
       <View style={styles.content}>
         <Image
           source={require('@/assets/images/logo_black240.png')}
@@ -24,7 +30,7 @@ export default function Index() {
 
       <View style={styles.buttonContainer}>
         <ButtonPrimary
-          title="Continue"
+          title={t('common.continue')}
           onPress={handleContinue}
           icon="arrow-forward"
           fullWidth
