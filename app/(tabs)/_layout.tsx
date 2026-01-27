@@ -7,11 +7,11 @@ import React from 'react'
 
 const TabsLayout = () => {
   const colors = AppColors()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
 
   return (
     <Tabs
+      key={currentLanguage}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

@@ -32,7 +32,6 @@ export default function CourseDetailScreen() {
   const router = useRouter()
   const colors = AppColors()
   const insets = useSafeAreaInsets()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
@@ -156,6 +155,7 @@ export default function CourseDetailScreen() {
 
   return (
     <View
+      key={currentLanguage}
       style={[
         styles.container,
         { backgroundColor: colors.backgroundSecondary },

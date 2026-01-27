@@ -27,11 +27,8 @@ interface CertificateData {
 export default function ProfileScreen() {
   const colors = AppColors()
   const router = useRouter()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
   const [certificates, setCertificates] = useState<CertificateData[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [languageChangeKey, setLanguageChangeKey] = useState(0)
 
   const loadCertificates = useCallback(async () => {
     const certs = await getCertificates()
@@ -48,12 +45,9 @@ export default function ProfileScreen() {
     router.push(`/(tabs)/courses/${courseId}/certificate`)
   }
 
-  const handleLanguageChange = () => {
-    setLanguageChangeKey((prev) => prev + 1)
-  }
-
   return (
     <View
+      key={currentLanguage}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}
@@ -195,7 +189,7 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             {t('profile.settings')}
           </Text>
-          <LanguageSelector onLanguageChange={handleLanguageChange} />
+          <LanguageSelector />
         </View>
 
         {/* Stats Section */}

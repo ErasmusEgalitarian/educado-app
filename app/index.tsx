@@ -9,7 +9,6 @@ import { StyleSheet, View } from 'react-native'
 export default function Index() {
   const router = useRouter()
   const colors = AppColors()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
 
   const handleContinue = () => {
@@ -17,7 +16,10 @@ export default function Index() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.primaryLight }]}>
+    <View
+      key={currentLanguage}
+      style={[styles.container, { backgroundColor: colors.primaryLight }]}
+    >
       <View style={styles.content}>
         <Image
           source={require('@/assets/images/logo_black240.png')}

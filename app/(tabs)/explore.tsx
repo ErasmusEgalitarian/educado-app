@@ -6,11 +6,11 @@ import { StyleSheet, Text, View } from 'react-native'
 
 export default function ExploreScreen() {
   const colors = AppColors()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLanguage } = useLanguage()
 
   return (
     <View
+      key={currentLanguage}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       <View style={styles.content}>
