@@ -1,5 +1,6 @@
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
@@ -24,7 +25,7 @@ export default function Index() {
 
       <View style={styles.buttonContainer}>
         <ButtonPrimary
-          title="Continue"
+          title={t('common.continue')}
           onPress={handleContinue}
           icon="arrow-forward"
           fullWidth

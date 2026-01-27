@@ -1,0 +1,78 @@
+{
+  "common": {
+    "continue": "Continue",
+    "loading": "Loading...",
+    "error": "Error",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "sections": "sections",
+    "questions": "questions",
+    "minutes": "min",
+    "hours": "h",
+    "complete": "complete",
+    "completed": "Completed"
+  },
+  "landing": {
+    "title": "Welcome"
+  },
+  "tabs": {
+    "courses": "Courses",
+    "explore": "Explore",
+    "profile": "Profile"
+  },
+  "home": {
+    "title": "Your Courses",
+    "subtitle": "Choose a course to continue learning"
+  },
+  "explore": {
+    "title": "Explore",
+    "comingSoon": "Coming soon! Discover new courses and learning paths."
+  },
+  "profile": {
+    "title": "Your Certificates",
+    "noCertificates": "No certificates yet. Complete a course to earn your first certificate!",
+    "certificatesEarned_one": "{{count}} certificate earned",
+    "certificatesEarned_other": "{{count}} certificates earned",
+    "settings": "Settings",
+    "language": "Language"
+  },
+  "course": {
+    "startCourse": "Start Course",
+    "continueLearning": "Continue Learning",
+    "viewCertificate": "View Certificate",
+    "backToCourse": "Back to Course",
+    "readyToAnswer": "Ready to Answer Questions",
+    "watchVideo": "Watch the video to unlock the questions"
+  },
+  "section": {
+    "question": "Question {{current}} of {{total}}",
+    "selectAnswer": "Select your answer:",
+    "true": "True",
+    "false": "False",
+    "checkAnswer": "Check Answer",
+    "nextQuestion": "Next Question",
+    "viewResults": "View Results"
+  },
+  "results": {
+    "greatJob": "Great Job!",
+    "goodEffort": "Good Effort!",
+    "score": "You scored {{score}}%",
+    "passed": "You've completed this section!",
+    "failed": "Review the material and try again.",
+    "backToCourse": "Back to Course"
+  },
+  "certificate": {
+    "title": "CERTIFICATE OF COMPLETION",
+    "certifies": "This certifies that",
+    "completed": "has successfully completed the course",
+    "date": "Date of Completion",
+    "share": "Share Certificate"
+  },
+  "errors": {
+    "loadCourse": "Failed to load course",
+    "loadSection": "Failed to load section",
+    "generic": "Something went wrong"
+  }
+}

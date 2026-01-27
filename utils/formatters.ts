@@ -1,3 +1,5 @@
+import { getCurrentLocale } from '@/i18n/config'
+
 /**
  * Format duration in seconds to human-readable string
  * @param seconds Duration in seconds
@@ -26,11 +28,11 @@ export const formatDuration = (seconds: number): string => {
 /**
  * Format date to readable format
  * @param dateString ISO date string
- * @returns Formatted date like "Jan 25, 2026"
+ * @returns Formatted date like "Jan 25, 2026" or "25 de jan de 2026"
  */
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getCurrentLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -40,11 +42,11 @@ export const formatDate = (dateString: string): string => {
 /**
  * Format date to long format for certificates
  * @param dateString ISO date string
- * @returns Formatted date like "January 25, 2026"
+ * @returns Formatted date like "January 25, 2026" or "25 de janeiro de 2026"
  */
 export const formatLongDate = (dateString: string): string => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getCurrentLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

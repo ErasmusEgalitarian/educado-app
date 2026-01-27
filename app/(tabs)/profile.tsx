@@ -1,4 +1,6 @@
+import LanguageSelector from '@/components/Common/LanguageSelector'
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { formatLongDate } from '@/utils/formatters'
 import { getCertificates } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
@@ -25,6 +27,8 @@ export default function ProfileScreen() {
   const colors = AppColors()
   const router = useRouter()
   const [certificates, setCertificates] = useState<CertificateData[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [languageChangeKey, setLanguageChangeKey] = useState(0)
 
   const loadCertificates = useCallback(async () => {
     const certs = await getCertificates()
@@ -39,6 +43,10 @@ export default function ProfileScreen() {
 
   const handleViewCertificate = (courseId: string) => {
     router.push(`/(tabs)/courses/${courseId}/certificate`)
+  }
+
+  const handleLanguageChange = () => {
+    setLanguageChangeKey((prev) => prev + 1)
   }
 
   return (
@@ -63,9 +71,7 @@ export default function ProfileScreen() {
             <Text
               style={[styles.profileSubtitle, { color: colors.textSecondary }]}
             >
-              {certificates.length}{' '}
-              {certificates.length === 1 ? 'certificate' : 'certificates'}{' '}
-              earned
+              {t('profile.certificatesEarned', { count: certificates.length })}
             </Text>
           </View>
         </View>
@@ -79,7 +85,7 @@ export default function ProfileScreen() {
         {/* Certificates Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            Your Certificates
+            {t('profile.title')}
           </Text>
 
           {certificates.length === 0 ? (
@@ -95,13 +101,12 @@ export default function ProfileScreen() {
                 color={colors.textSecondary}
               />
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-                No certificates yet
+                {t('profile.noCertificates').split('. ')[0]}
               </Text>
               <Text
                 style={[styles.emptySubtitle, { color: colors.textSecondary }]}
               >
-                Complete courses with a score of 75% or higher to earn
-                certificates
+                {t('profile.noCertificates').split('. ')[1]}
               </Text>
             </View>
           ) : (
@@ -180,6 +185,14 @@ export default function ProfileScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        {/* Settings Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            {t('profile.settings')}
+          </Text>
+          <LanguageSelector onLanguageChange={handleLanguageChange} />
         </View>
 
         {/* Stats Section */}
