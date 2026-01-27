@@ -1,5 +1,6 @@
 import CourseCard from '@/components/Course/CourseCard'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { mockCourses } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import { getCourseCompletionPercentage } from '@/utils/progress-storage'
@@ -10,6 +11,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { currentLanguage } = useLanguage()
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
     {}
   )

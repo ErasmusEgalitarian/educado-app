@@ -2,6 +2,7 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import ProgressBar from '@/components/Common/ProgressBar'
 import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { getCourseById } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import { getCourseImage } from '@/utils/image-loader'
@@ -31,6 +32,8 @@ export default function CourseDetailScreen() {
   const router = useRouter()
   const colors = AppColors()
   const insets = useSafeAreaInsets()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
   const [completedSections, setCompletedSections] = useState<Set<string>>(
