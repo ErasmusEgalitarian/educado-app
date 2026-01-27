@@ -4,27 +4,30 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001'
 export default {
   expo: {
     name: 'Educado',
-    slug: 'educado-app',
+    slug: 'educado',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/images/logo_black240.png',
-    scheme: 'educadoapp',
+    scheme: 'educado',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     extra: {
       API_URL,
+      eas: {
+        projectId: "d286ed3c-ebc2-4462-83d1-447c2a59fb4b",
+      }
     },
     ios: {
       name: 'Educado',
       supportsTablet: true,
-      bundleIdentifier: 'com.educado.app',
+      bundleIdentifier: 'com.educadoapp.app',
     },
     android: {
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
         foregroundImage: './assets/images/logo_black240.png',
       },
-      package: 'com.educado.app',
+      package: 'com.educadoapp.app',
     },
     plugins: [
       'expo-router',
