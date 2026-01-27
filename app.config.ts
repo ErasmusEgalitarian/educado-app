@@ -20,14 +20,14 @@ export default {
     ios: {
       name: 'Educado',
       supportsTablet: true,
-      bundleIdentifier: 'com.educadoapp.app',
+      bundleIdentifier: 'com.educado2.app',
     },
     android: {
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
         foregroundImage: './assets/images/logo_black240.png',
       },
-      package: 'com.educadoapp.app',
+      package: 'com.educado2.app',
     },
     plugins: [
       'expo-router',
