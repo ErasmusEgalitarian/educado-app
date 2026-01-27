@@ -26,6 +26,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     player.play()
   })
 
+  // Auto-play on mount, pause on unmount
+  useEffect(() => {
+    if (!player) return
+
+    // Ensure video starts playing
+    player.play()
+
+    return () => {
+      // Pause video when component unmounts (navigating away from video phase)
+      try {
+        player.pause()
+      } catch (err) {
+        // Ignore errors if player is already released
+        console.log('Video player cleanup (already released)', err)
+      }
+    }
+  }, [player])
+
+  // Track video progress
   useEffect(() => {
     if (!player) return
 
@@ -108,7 +127,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       <VideoView
         style={styles.video}
         player={player}
-        allowsFullscreen
+        fullscreenOptions={{
+          enable: true,
+        }}
         allowsPictureInPicture
         nativeControls
       />

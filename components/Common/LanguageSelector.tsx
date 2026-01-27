@@ -2,6 +2,7 @@ import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { changeLanguage, getCurrentLanguage, t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -25,6 +26,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
 }) => {
   const colors = AppColors()
+  const router = useRouter()
   const { refreshLanguage } = useLanguage()
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'pt-BR'>(
@@ -36,8 +38,13 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     await changeLanguage(languageCode)
     setIsModalVisible(false)
 
-    // Refresh the language context to trigger re-renders
+    // Refresh the language context - this will force entire app to remount
     refreshLanguage()
+
+    // Navigate to root to ensure clean state
+    setTimeout(() => {
+      router.push('/(tabs)')
+    }, 100)
 
     // Trigger re-render by calling callback
     if (onLanguageChange) {

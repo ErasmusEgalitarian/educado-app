@@ -29,8 +29,8 @@ export interface Course {
 }
 
 // Sample video URL for all sections
-const SAMPLE_VIDEO_URL =
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+const SAMPLE_VIDEO_URL = require('@/assets/videos/Crypto Bro A.mp4')
+// 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
 
 // Mock courses data
 export const mockCourses: Course[] = [

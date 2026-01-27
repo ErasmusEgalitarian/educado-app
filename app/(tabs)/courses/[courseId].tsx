@@ -235,7 +235,7 @@ export default function CourseDetailScreen() {
               <Text
                 style={[styles.progressTitle, { color: colors.textPrimary }]}
               >
-                Your Progress
+                {t('course.yourProgress')}
               </Text>
               <ProgressBar
                 current={completedSections.size}
@@ -250,7 +250,7 @@ export default function CourseDetailScreen() {
 
           <View style={styles.sectionsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Course Sections
+              {t('course.courseSections')}
             </Text>
           </View>
 
@@ -293,14 +293,16 @@ export default function CourseDetailScreen() {
                   ]}
                 >
                   {hasPassed
-                    ? 'Congratulations! You passed!'
-                    : 'Course completed'}
+                    ? t('course.congratulations')
+                    : t('course.courseCompleted')}
                 </Text>
                 <Text
                   style={[styles.scoreMessageText, { color: colors.textLight }]}
                 >
-                  Your score: {courseScore}% (Passing: {course.passingThreshold}
-                  %)
+                  {t('course.yourScore', {
+                    score: courseScore,
+                    passing: course.passingThreshold,
+                  })}
                 </Text>
                 {!hasPassed && (
                   <Text
@@ -309,8 +311,7 @@ export default function CourseDetailScreen() {
                       { color: colors.textLight },
                     ]}
                   >
-                    Retake sections to improve your score and earn a
-                    certificate.
+                    {t('course.retakeMessage')}
                   </Text>
                 )}
               </View>
