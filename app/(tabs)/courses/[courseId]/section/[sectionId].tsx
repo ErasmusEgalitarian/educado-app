@@ -2,7 +2,6 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import QuestionCard from '@/components/Section/QuestionCard'
 import VideoPlayer from '@/components/Section/VideoPlayer'
 import { AppColors } from '@/constants/theme/AppColors'
-import { useLanguage } from '@/contexts/LanguageContext'
 import { getCourseById, getNextSection, getSectionById } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import {
@@ -13,7 +12,7 @@ import {
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -33,8 +32,6 @@ export default function SectionScreen() {
   const router = useRouter()
   const colors = AppColors()
   const insets = useSafeAreaInsets()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
   const section = getSectionById(courseId, sectionId)
@@ -45,6 +42,14 @@ export default function SectionScreen() {
   const [answers, setAnswers] = useState<
     Array<{ isCorrect: boolean; answer: number | boolean }>
   >([])
+
+  // Reset all state when sectionId changes (navigating to a new section)
+  useEffect(() => {
+    setPhase('video')
+    setVideoWatchPercentage(0)
+    setCurrentQuestionIndex(0)
+    setAnswers([])
+  }, [sectionId])
 
   if (!course || !section) {
     return (
@@ -138,13 +143,14 @@ export default function SectionScreen() {
 
   return (
     <View
+      key={sectionId}
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.cardBackground }]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.replace(`/(tabs)/courses/${courseId}`)}
         >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
@@ -165,6 +171,7 @@ export default function SectionScreen() {
             showsVerticalScrollIndicator={false}
           >
             <VideoPlayer
+              key={sectionId}
               videoUrl={section.videoUrl}
               onProgressUpdate={handleVideoProgress}
               minimumWatchPercentage={80}

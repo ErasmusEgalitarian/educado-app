@@ -45,7 +45,13 @@
     "viewCertificate": "View Certificate",
     "backToCourse": "Back to Course",
     "readyToAnswer": "Ready to Answer Questions",
-    "watchVideo": "Watch the video to unlock the questions"
+    "watchVideo": "Watch the video to unlock the questions",
+    "yourProgress": "Your Progress",
+    "courseSections": "Course Sections",
+    "congratulations": "Congratulations! You passed!",
+    "courseCompleted": "Course completed",
+    "yourScore": "Your score: {{score}}% (Passing: {{passing}}%)",
+    "retakeMessage": "Retake sections to improve your score and earn a certificate."
   },
   "section": {
     "question": "Question {{current}} of {{total}}",

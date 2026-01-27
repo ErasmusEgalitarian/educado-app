@@ -45,7 +45,13 @@
     "viewCertificate": "Ver Certificado",
     "backToCourse": "Voltar ao Curso",
     "readyToAnswer": "Pronto para Responder Questões",
-    "watchVideo": "Assista ao vídeo para desbloquear as questões"
+    "watchVideo": "Assista ao vídeo para desbloquear as questões",
+    "yourProgress": "Seu Progresso",
+    "courseSections": "Seções do Curso",
+    "congratulations": "Parabéns! Você passou!",
+    "courseCompleted": "Curso concluído",
+    "yourScore": "Sua pontuação: {{score}}% (Necessário: {{passing}}%)",
+    "retakeMessage": "Refaça as seções para melhorar sua pontuação e ganhar um certificado."
   },
   "section": {
     "question": "Questão {{current}} de {{total}}",
