@@ -2,7 +2,9 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import ProgressBar from '@/components/Common/ProgressBar'
 import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { getCourseById } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import { getCourseImage } from '@/utils/image-loader'
 import {
   getCourseProgress,
@@ -30,6 +32,7 @@ export default function CourseDetailScreen() {
   const router = useRouter()
   const colors = AppColors()
   const insets = useSafeAreaInsets()
+  const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
   const [completedSections, setCompletedSections] = useState<Set<string>>(
@@ -140,7 +143,9 @@ export default function CourseDetailScreen() {
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Text style={{ color: colors.textPrimary }}>Course not found</Text>
+        <Text style={{ color: colors.textPrimary }}>
+          {t('errors.loadCourse')}
+        </Text>
       </View>
     )
   }
@@ -150,6 +155,7 @@ export default function CourseDetailScreen() {
 
   return (
     <View
+      key={currentLanguage}
       style={[
         styles.container,
         { backgroundColor: colors.backgroundSecondary },
@@ -193,7 +199,7 @@ export default function CourseDetailScreen() {
               <Text
                 style={[styles.metadataText, { color: colors.textSecondary }]}
               >
-                {course.sections.length} sections
+                {course.sections.length} {t('common.sections')}
               </Text>
             </View>
 
@@ -325,10 +331,10 @@ export default function CourseDetailScreen() {
         <ButtonPrimary
           title={
             isCompleted && hasPassed
-              ? 'View Certificate'
+              ? t('course.viewCertificate')
               : isStarted
-                ? 'Continue Course'
-                : 'Start Course'
+                ? t('course.continueLearning')
+                : t('course.startCourse')
           }
           onPress={
             isCompleted && hasPassed

@@ -1,5 +1,6 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { Section } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import { formatDuration } from '@/utils/formatters'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -109,7 +110,7 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
             <Text
               style={[styles.metadataText, { color: colors.textSecondary }]}
             >
-              {section.questions.length} questions
+              {section.questions.length} {t('common.questions')}
             </Text>
           </View>
         </View>
