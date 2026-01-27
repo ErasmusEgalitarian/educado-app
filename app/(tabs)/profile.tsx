@@ -1,13 +1,9 @@
-import LanguageSelector from '@/components/Common/LanguageSelector'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { t } from '@/i18n/config'
-import { formatLongDate } from '@/utils/formatters'
-import { getCertificates } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
-import { useFocusEffect } from '@react-navigation/native'
-import { useRouter } from 'expo-router'
-import React, { useCallback, useState } from 'react'
+import * as Haptics from 'expo-haptics'
+import React from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -15,233 +11,134 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-
-interface CertificateData {
-  courseId: string
-  courseName: string
-  completedAt: string
-  userName: string
-  totalSections: number
-}
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ProfileScreen() {
   const colors = AppColors()
-  const router = useRouter()
   const { currentLanguage } = useLanguage()
-  const [certificates, setCertificates] = useState<CertificateData[]>([])
+  const insets = useSafeAreaInsets()
 
-  const loadCertificates = useCallback(async () => {
-    const certs = await getCertificates()
-    setCertificates(certs)
-  }, [])
+  // Mock data - replace with real data later
+  const userInitials = 'AA'
+  const userName = t('profile.avatarName')
+  const userEmail = t('profile.userEmail')
+  const daysStreak = 1
+  const level = 1
+  const levelProgress = 75 // percentage
 
-  useFocusEffect(
-    useCallback(() => {
-      loadCertificates()
-    }, [loadCertificates])
-  )
-
-  const handleViewCertificate = (courseId: string) => {
-    router.push(`/(tabs)/courses/${courseId}/certificate`)
+  const handleMenuPress = (screen: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    // Navigate to respective screens
+    console.log(`Navigate to: ${screen}`)
   }
+
+  const menuItems = [
+    {
+      id: 'editProfile',
+      label: t('profile.editProfile'),
+      icon: 'person-outline',
+    },
+    {
+      id: 'certificates',
+      label: t('profile.certificates'),
+      icon: 'ribbon-outline',
+    },
+    { id: 'ranking', label: t('profile.ranking'), icon: 'trophy-outline' },
+    { id: 'download', label: t('profile.download'), icon: 'download-outline' },
+    {
+      id: 'changePassword',
+      label: t('profile.changePassword'),
+      icon: 'lock-closed-outline',
+    },
+  ]
 
   return (
     <View
       key={currentLanguage}
-      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
+      style={[
+        styles.container,
+        { backgroundColor: colors.backgroundPrimary, paddingTop: insets.top },
+      ]}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.profileInfo}>
-          <View
-            style={[
-              styles.profileAvatar,
-              { backgroundColor: colors.primaryLight },
-            ]}
-          >
-            <Ionicons name="person" size={48} color={colors.primary} />
-          </View>
-          <View style={styles.profileText}>
-            <Text style={[styles.profileName, { color: colors.textPrimary }]}>
-              Learner
-            </Text>
-            <Text
-              style={[styles.profileSubtitle, { color: colors.textSecondary }]}
-            >
-              {t('profile.certificatesEarned', { count: certificates.length })}
-            </Text>
-          </View>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 24) + 80 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Certificates Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {t('profile.title')}
-          </Text>
-
-          {certificates.length === 0 ? (
-            <View
-              style={[
-                styles.emptyState,
-                { backgroundColor: colors.cardBackground },
-              ]}
-            >
-              <Ionicons
-                name="ribbon-outline"
-                size={64}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-                {t('profile.noCertificates').split('. ')[0]}
-              </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.textSecondary }]}
-              >
-                {t('profile.noCertificates').split('. ')[1]}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.certificatesList}>
-              {certificates.map((cert) => (
-                <TouchableOpacity
-                  key={cert.courseId}
-                  style={[
-                    styles.certificateCard,
-                    { backgroundColor: colors.cardBackground },
-                  ]}
-                  onPress={() => handleViewCertificate(cert.courseId)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.certificateIcon,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  >
-                    <Ionicons
-                      name="trophy"
-                      size={32}
-                      color={colors.textLight}
-                    />
-                  </View>
-
-                  <View style={styles.certificateContent}>
-                    <Text
-                      style={[
-                        styles.certificateTitle,
-                        { color: colors.textPrimary },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {cert.courseName}
-                    </Text>
-                    <View style={styles.certificateMeta}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                      <Text
-                        style={[
-                          styles.certificateDate,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {formatLongDate(cert.completedAt)}
-                      </Text>
-                    </View>
-                    <View style={styles.certificateMeta}>
-                      <Ionicons
-                        name="book-outline"
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                      <Text
-                        style={[
-                          styles.certificateDate,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {cert.totalSections} sections
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Ionicons
-                    name="chevron-forward"
-                    size={24}
-                    color={colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Settings Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {t('profile.settings')}
-          </Text>
-          <LanguageSelector />
-        </View>
-
-        {/* Stats Section */}
-        {certificates.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Your Stats
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={[styles.avatar, { backgroundColor: '#E0F2F1' }]}>
+            <Text style={styles.avatarText}>{userInitials}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={[styles.userName, { color: colors.textPrimary }]}>
+              {userName}
             </Text>
-            <View style={styles.statsGrid}>
-              <View
-                style={[
-                  styles.statCard,
-                  { backgroundColor: colors.cardBackground },
-                ]}
-              >
-                <Ionicons name="trophy" size={32} color={colors.primary} />
-                <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                  {certificates.length}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Certificates
-                </Text>
-              </View>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+              {userEmail}
+            </Text>
+          </View>
+        </View>
 
+        {/* Stats Cards */}
+        <View
+          style={[styles.statsCard, { backgroundColor: colors.cardBackground }]}
+        >
+          {/* Streak Card */}
+          <View
+            style={[styles.statBadgeSingle, { backgroundColor: '#6EBE44' }]}
+          >
+            <Text style={styles.statIcon}>🔥</Text>
+            <Text style={styles.statLabel}>
+              {t('profile.daysStreak', { count: daysStreak })}
+            </Text>
+          </View>
+
+          {/* Level Progress */}
+          <View style={styles.levelContainer}>
+            <Text style={[styles.levelText, { color: colors.textPrimary }]}>
+              {t('profile.level', { level })}
+            </Text>
+            <View style={styles.levelProgressBar}>
               <View
                 style={[
-                  styles.statCard,
-                  { backgroundColor: colors.cardBackground },
+                  styles.levelProgressFill,
+                  { width: `${levelProgress}%` },
                 ]}
-              >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={32}
-                  color={colors.primary}
-                />
-                <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                  {certificates.reduce(
-                    (sum, cert) => sum + cert.totalSections,
-                    0
-                  )}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Sections Completed
-                </Text>
-              </View>
+              />
             </View>
           </View>
-        )}
+        </View>
+
+        {/* Menu Items */}
+        <View style={styles.menuContainer}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                {
+                  borderBottomWidth: index < menuItems.length - 1 ? 1 : 0,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+              onPress={() => handleMenuPress(item.id)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                {item.label}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </View>
   )
@@ -251,134 +148,104 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  profileAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileText: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  profileSubtitle: {
-    fontSize: 16,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 100,
+    padding: 24,
   },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  emptyState: {
-    padding: 40,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  certificatesList: {
-    gap: 12,
-  },
-  certificateCard: {
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-    gap: 12,
+    marginBottom: 24,
+    gap: 16,
   },
-  certificateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  certificateContent: {
-    flex: 1,
-  },
-  certificateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  certificateMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  certificateDate: {
-    fontSize: 13,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  statValue: {
-    fontSize: 32,
+  avatarText: {
+    fontSize: 24,
     fontWeight: '700',
-    marginTop: 12,
+    color: '#00796B',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: '600',
     marginBottom: 4,
   },
-  statLabel: {
+  userEmail: {
     fontSize: 14,
+  },
+  statsCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statBadgeSingle: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+    marginBottom: 16,
+  },
+  statIcon: {
+    fontSize: 24,
+    marginBottom: 6,
+  },
+  statLabel: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  levelContainer: {
+    marginTop: 8,
+  },
+  levelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  levelProgressBar: {
+    height: 10,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  levelProgressFill: {
+    height: '100%',
+    backgroundColor: '#4A90A4',
+    borderRadius: 5,
+  },
+  menuContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  menuLabel: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 })

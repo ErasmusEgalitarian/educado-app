@@ -12,7 +12,8 @@
     "minutes": "min",
     "hours": "h",
     "complete": "completo",
-    "completed": "Concluído"
+    "completed": "Concluído",
+    "correct": "correto"
   },
   "landing": {
     "title": "Bem-vindo"
@@ -24,11 +25,31 @@
   },
   "home": {
     "title": "Seus Cursos",
-    "subtitle": "Escolha um curso para continuar aprendendo"
+    "subtitle": "Escolha um curso para continuar aprendendo",
+    "welcome": "Bem vindo!",
+    "level": "Nível {{level}}",
+    "levelProgress": "Faltam apenas {{points}} pontos para você mudar de nível, continue estudando para chegar lá 😘",
+    "courseName": "Nome do curso",
+    "subject": "Matemática",
+    "noCourses": "Nenhum Curso Inscrito Ainda",
+    "exploreToEnroll": "Visite a aba Explorar para descobrir e se inscrever em cursos",
+    "exploreCourses": "Explorar Cursos"
   },
   "explore": {
-    "title": "Explorar",
-    "comingSoon": "Em breve! Descubra novos cursos e caminhos de aprendizado."
+    "title": "Explorar cursos",
+    "searchPlaceholder": "Buscar curso",
+    "all": "Todos",
+    "finance": "Finanças",
+    "arts": "Artes",
+    "history": "História",
+    "science": "Ciência",
+    "learnMore": "saiba mais »",
+    "basic": "Básico",
+    "intermediate": "Intermediário",
+    "advanced": "Avançado",
+    "enrollNow": "Inscreva-se agora",
+    "alreadyEnrolled": "Já Inscrito",
+    "viewCourse": "Ver Curso"
   },
   "profile": {
     "title": "Seus Certificados",
@@ -37,7 +58,19 @@
     "certificatesEarned_one": "{{count}} certificado obtido",
     "certificatesEarned_other": "{{count}} certificados obtidos",
     "settings": "Configurações",
-    "language": "Idioma"
+    "language": "Idioma",
+    "avatarName": "Avatar Name",
+    "userEmail": "useremail@gmail.com",
+    "daysStreak": "{{count}} dia seguido",
+    "daysStreak_other": "{{count}} dias seguidos",
+    "points": "{{count}} pontos",
+    "position": "{{position}}° posição",
+    "level": "Nível {{level}}",
+    "editProfile": "Editar perfil",
+    "certificates": "Certificados",
+    "ranking": "Ranking",
+    "download": "Download",
+    "changePassword": "Alterar senha"
   },
   "course": {
     "startCourse": "Iniciar Curso",
@@ -51,7 +84,13 @@
     "congratulations": "Parabéns! Você passou!",
     "courseCompleted": "Curso concluído",
     "yourScore": "Sua pontuação: {{score}}% (Necessário: {{passing}}%)",
-    "retakeMessage": "Refaça as seções para melhorar sua pontuação e ganhar um certificado."
+    "retakeMessage": "Refaça as seções para melhorar sua pontuação e ganhar um certificado.",
+    "percentCompleted": "{{percent}}% concluído",
+    "unenrollCourse": "Retirar curso",
+    "unenrollConfirmTitle": "Desinscrever do Curso?",
+    "unenrollConfirmMessage": "Tem certeza de que deseja se desinscrever deste curso? Seu progresso será salvo.",
+    "unenrollConfirm": "Desinscrever",
+    "cancel": "Cancelar"
   },
   "section": {
     "question": "Questão {{current}} de {{total}}",

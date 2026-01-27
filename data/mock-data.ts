@@ -26,6 +26,9 @@ export interface Course {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   estimatedTime: string
   passingThreshold: number // Minimum percentage (0-100) required to pass and get certificate
+  category: string // Category/tag for filtering
+  rating?: number // Course rating out of 5
+  tags: string[] // Tags for filtering and display
 }
 
 // Sample video URL for all sections
@@ -45,6 +48,9 @@ export const mockCourses: Course[] = [
     difficulty: 'beginner',
     estimatedTime: '30 min',
     passingThreshold: 75,
+    category: 'science',
+    rating: 3.7,
+    tags: ['recycling', 'environment', 'waste management', 'sustainability'],
     sections: [
       {
         id: '1-1',
@@ -157,6 +163,9 @@ export const mockCourses: Course[] = [
     difficulty: 'beginner',
     estimatedTime: '45 min',
     passingThreshold: 75,
+    category: 'science',
+    rating: 3.7,
+    tags: ['safety', 'workplace', 'PPE', 'health'],
     sections: [
       {
         id: '2-1',
@@ -291,6 +300,9 @@ export const mockCourses: Course[] = [
     difficulty: 'intermediate',
     estimatedTime: '35 min',
     passingThreshold: 75,
+    category: 'science',
+    rating: 3.7,
+    tags: ['materials', 'identification', 'recycling', 'classification'],
     sections: [
       {
         id: '3-1',
