@@ -1,5 +1,6 @@
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { t } from '@/i18n/config'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
@@ -8,6 +9,8 @@ import { StyleSheet, View } from 'react-native'
 export default function Index() {
   const router = useRouter()
   const colors = AppColors()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { currentLanguage } = useLanguage()
 
   const handleContinue = () => {
     router.push('/(tabs)')

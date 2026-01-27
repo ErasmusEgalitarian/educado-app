@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { changeLanguage, getCurrentLanguage, t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import React, { useState } from 'react'
@@ -24,6 +25,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
 }) => {
   const colors = AppColors()
+  const { refreshLanguage } = useLanguage()
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'pt-BR'>(
     getCurrentLanguage()
@@ -33,6 +35,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     setSelectedLanguage(languageCode)
     await changeLanguage(languageCode)
     setIsModalVisible(false)
+
+    // Refresh the language context to trigger re-renders
+    refreshLanguage()
 
     // Trigger re-render by calling callback
     if (onLanguageChange) {

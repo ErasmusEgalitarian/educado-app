@@ -2,6 +2,7 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import QuestionCard from '@/components/Section/QuestionCard'
 import VideoPlayer from '@/components/Section/VideoPlayer'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { getCourseById, getNextSection, getSectionById } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import {
@@ -32,6 +33,8 @@ export default function SectionScreen() {
   const router = useRouter()
   const colors = AppColors()
   const insets = useSafeAreaInsets()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { currentLanguage } = useLanguage()
 
   const course = getCourseById(courseId)
   const section = getSectionById(courseId, sectionId)
@@ -211,7 +214,7 @@ export default function SectionScreen() {
             ]}
           >
             <ButtonPrimary
-              title="Ready to Answer Questions"
+              title={t('course.readyToAnswer')}
               onPress={handleReadyToAnswer}
               icon="checkmark"
               fullWidth

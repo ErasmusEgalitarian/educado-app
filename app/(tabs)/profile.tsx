@@ -1,5 +1,6 @@
 import LanguageSelector from '@/components/Common/LanguageSelector'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { t } from '@/i18n/config'
 import { formatLongDate } from '@/utils/formatters'
 import { getCertificates } from '@/utils/progress-storage'
@@ -26,6 +27,8 @@ interface CertificateData {
 export default function ProfileScreen() {
   const colors = AppColors()
   const router = useRouter()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { currentLanguage } = useLanguage()
   const [certificates, setCertificates] = useState<CertificateData[]>([])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [languageChangeKey, setLanguageChangeKey] = useState(0)
