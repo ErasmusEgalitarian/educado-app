@@ -1,5 +1,6 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { Course } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import { getCourseImage } from '@/utils/image-loader'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -78,7 +79,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <Text
               style={[styles.metadataText, { color: colors.textSecondary }]}
             >
-              {course.sections.length} sections
+              {course.sections.length} {t('common.sections')}
             </Text>
           </View>
 

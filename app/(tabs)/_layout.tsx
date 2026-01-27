@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import React from 'react'
@@ -21,7 +22,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Central',
+          title: t('tabs.courses'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -30,7 +31,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: t('tabs.explore'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="compass" size={size} color={color} />
           ),
@@ -39,7 +40,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

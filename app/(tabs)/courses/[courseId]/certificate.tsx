@@ -2,6 +2,7 @@ import Certificate from '@/components/Certificate/Certificate'
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
 import { getCourseById } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import {
   getCertificate,
   getCourseProgress,
@@ -142,7 +143,9 @@ export default function CertificateScreen() {
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Text style={{ color: colors.textPrimary }}>Course not found</Text>
+        <Text style={{ color: colors.textPrimary }}>
+          {t('errors.loadCourse')}
+        </Text>
       </View>
     )
   }

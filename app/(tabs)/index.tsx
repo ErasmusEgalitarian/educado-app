@@ -1,6 +1,7 @@
 import CourseCard from '@/components/Course/CourseCard'
 import { AppColors } from '@/constants/theme/AppColors'
 import { mockCourses } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import { getCourseCompletionPercentage } from '@/utils/progress-storage'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
@@ -44,12 +45,12 @@ export default function CoursesScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Your Courses
+            {t('home.title')}
           </Text>
           <Text
             style={[styles.headerSubtitle, { color: colors.textSecondary }]}
           >
-            Choose a course to continue learning
+            {t('home.subtitle')}
           </Text>
         </View>
 

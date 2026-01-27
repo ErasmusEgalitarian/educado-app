@@ -3,6 +3,7 @@ import QuestionCard from '@/components/Section/QuestionCard'
 import VideoPlayer from '@/components/Section/VideoPlayer'
 import { AppColors } from '@/constants/theme/AppColors'
 import { getCourseById, getNextSection, getSectionById } from '@/data/mock-data'
+import { t } from '@/i18n/config'
 import {
   hasPassedCourse,
   isCourseCompleted,
@@ -50,7 +51,9 @@ export default function SectionScreen() {
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Text style={{ color: colors.textPrimary }}>Section not found</Text>
+        <Text style={{ color: colors.textPrimary }}>
+          {t('errors.loadSection')}
+        </Text>
       </View>
     )
   }

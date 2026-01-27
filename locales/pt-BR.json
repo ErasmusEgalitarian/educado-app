@@ -1,0 +1,78 @@
+{
+  "common": {
+    "continue": "Continuar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "close": "Fechar",
+    "sections": "seções",
+    "questions": "questões",
+    "minutes": "min",
+    "hours": "h",
+    "complete": "completo",
+    "completed": "Concluído"
+  },
+  "landing": {
+    "title": "Bem-vindo"
+  },
+  "tabs": {
+    "courses": "Cursos",
+    "explore": "Explorar",
+    "profile": "Perfil"
+  },
+  "home": {
+    "title": "Seus Cursos",
+    "subtitle": "Escolha um curso para continuar aprendendo"
+  },
+  "explore": {
+    "title": "Explorar",
+    "comingSoon": "Em breve! Descubra novos cursos e caminhos de aprendizado."
+  },
+  "profile": {
+    "title": "Seus Certificados",
+    "noCertificates": "Nenhum certificado ainda. Complete um curso para ganhar seu primeiro certificado!",
+    "certificatesEarned_one": "{{count}} certificado obtido",
+    "certificatesEarned_other": "{{count}} certificados obtidos",
+    "settings": "Configurações",
+    "language": "Idioma"
+  },
+  "course": {
+    "startCourse": "Iniciar Curso",
+    "continueLearning": "Continuar Aprendendo",
+    "viewCertificate": "Ver Certificado",
+    "backToCourse": "Voltar ao Curso",
+    "readyToAnswer": "Pronto para Responder Questões",
+    "watchVideo": "Assista ao vídeo para desbloquear as questões"
+  },
+  "section": {
+    "question": "Questão {{current}} de {{total}}",
+    "selectAnswer": "Selecione sua resposta:",
+    "true": "Verdadeiro",
+    "false": "Falso",
+    "checkAnswer": "Verificar Resposta",
+    "nextQuestion": "Próxima Questão",
+    "viewResults": "Ver Resultados"
+  },
+  "results": {
+    "greatJob": "Ótimo Trabalho!",
+    "goodEffort": "Bom Esforço!",
+    "score": "Você pontuou {{score}}%",
+    "passed": "Você completou esta seção!",
+    "failed": "Revise o material e tente novamente.",
+    "backToCourse": "Voltar ao Curso"
+  },
+  "certificate": {
+    "title": "CERTIFICADO DE CONCLUSÃO",
+    "certifies": "Certifica que",
+    "completed": "completou com sucesso o curso",
+    "date": "Data de Conclusão",
+    "share": "Compartilhar Certificado"
+  },
+  "errors": {
+    "loadCourse": "Falha ao carregar curso",
+    "loadSection": "Falha ao carregar seção",
+    "generic": "Algo deu errado"
+  }
+}

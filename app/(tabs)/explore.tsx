@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import { StyleSheet, Text, View } from 'react-native'
 
@@ -12,10 +13,10 @@ export default function ExploreScreen() {
       <View style={styles.content}>
         <Ionicons name="compass" size={80} color={colors.primary} />
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Explore
+          {t('explore.title')}
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Coming soon! Discover new courses and learning paths.
+          {t('explore.comingSoon')}
         </Text>
       </View>
     </View>
