@@ -12,7 +12,8 @@
     "minutes": "min",
     "hours": "h",
     "complete": "complete",
-    "completed": "Completed"
+    "completed": "Completed",
+    "correct": "correct"
   },
   "landing": {
     "title": "Welcome"
@@ -24,11 +25,31 @@
   },
   "home": {
     "title": "Your Courses",
-    "subtitle": "Choose a course to continue learning"
+    "subtitle": "Choose a course to continue learning",
+    "welcome": "Welcome!",
+    "level": "Level {{level}}",
+    "levelProgress": "Just {{points}} more points to reach the next level, keep studying to get there 😘",
+    "courseName": "Course Name",
+    "subject": "Math",
+    "noCourses": "No Enrolled Courses Yet",
+    "exploreToEnroll": "Visit the Explore tab to discover and enroll in courses",
+    "exploreCourses": "Explore Courses"
   },
   "explore": {
-    "title": "Explore",
-    "comingSoon": "Coming soon! Discover new courses and learning paths."
+    "title": "Explore Courses",
+    "searchPlaceholder": "Search course",
+    "all": "All",
+    "finance": "Finance",
+    "arts": "Arts",
+    "history": "History",
+    "science": "Science",
+    "learnMore": "learn more »",
+    "basic": "Basic",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "enrollNow": "Enroll Now",
+    "alreadyEnrolled": "Already Enrolled",
+    "viewCourse": "View Course"
   },
   "profile": {
     "title": "Your Certificates",
@@ -37,7 +58,19 @@
     "certificatesEarned_one": "{{count}} certificate earned",
     "certificatesEarned_other": "{{count}} certificates earned",
     "settings": "Settings",
-    "language": "Language"
+    "language": "Language",
+    "avatarName": "Avatar Name",
+    "userEmail": "useremail@gmail.com",
+    "daysStreak": "{{count}} day streak",
+    "daysStreak_other": "{{count}} days streak",
+    "points": "{{count}} points",
+    "position": "{{position}}° position",
+    "level": "Level {{level}}",
+    "editProfile": "Edit profile",
+    "certificates": "Certificates",
+    "ranking": "Ranking",
+    "download": "Download",
+    "changePassword": "Change password"
   },
   "course": {
     "startCourse": "Start Course",
@@ -51,7 +84,13 @@
     "congratulations": "Congratulations! You passed!",
     "courseCompleted": "Course completed",
     "yourScore": "Your score: {{score}}% (Passing: {{passing}}%)",
-    "retakeMessage": "Retake sections to improve your score and earn a certificate."
+    "retakeMessage": "Retake sections to improve your score and earn a certificate.",
+    "percentCompleted": "{{percent}}% completed",
+    "unenrollCourse": "Unenroll from course",
+    "unenrollConfirmTitle": "Unenroll from Course?",
+    "unenrollConfirmMessage": "Are you sure you want to unenroll from this course? Your progress will be saved.",
+    "unenrollConfirm": "Unenroll",
+    "cancel": "Cancel"
   },
   "section": {
     "question": "Question {{current}} of {{total}}",

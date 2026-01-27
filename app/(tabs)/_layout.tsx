@@ -53,7 +53,6 @@ const TabsLayout = () => {
         name="courses/[courseId]"
         options={{
           href: null,
-          tabBarStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
