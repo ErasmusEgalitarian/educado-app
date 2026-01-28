@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { getVideoSource } from '@/utils/video-assets'
 import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useRef, useState } from 'react'
@@ -37,7 +38,7 @@ const VideoPlayerWithPauses: React.FC<VideoPlayerWithPausesProps> = ({
   )
   const hasTriggeredComplete = useRef(false)
 
-  const player = useVideoPlayer(videoUrl, (player) => {
+  const player = useVideoPlayer(getVideoSource(videoUrl), (player) => {
     player.loop = false
     player.play()
   })
