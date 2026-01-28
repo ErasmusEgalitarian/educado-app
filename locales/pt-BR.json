@@ -99,7 +99,18 @@
     "false": "Falso",
     "checkAnswer": "Verificar Resposta",
     "nextQuestion": "Próxima Questão",
-    "viewResults": "Ver Resultados"
+    "viewResults": "Ver Resultados",
+    "exitActivity": "Sair da Atividade",
+    "exitConfirmTitle": "Sair da Atividade?",
+    "exitConfirmMessage": "Seu progresso será salvo. Tem certeza de que deseja sair?",
+    "exitConfirm": "Sair",
+    "readAllPages": "Leia todas as páginas para continuar",
+    "completeAndContinue": "Concluir e Continuar",
+    "replaySection": "Repetir Seção",
+    "correct": "Correto!",
+    "incorrect": "Incorreto. A resposta é {{answer}}.",
+    "correctAnswer": "Resposta correta",
+    "courseName": "Nome do Curso"
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",

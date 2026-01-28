@@ -36,3 +36,16 @@ export const getSectionThumbnail = (thumbnailUrl: string) => {
     require('@/assets/images/logo_black240.png')
   )
 }
+
+/**
+ * General image loader for both courses and sections
+ * @param imageUrl The image identifier
+ * @returns Image source for expo-image or fallback logo
+ */
+export const imageLoader = (imageUrl: string) => {
+  return (
+    courseImages[imageUrl] ||
+    sectionThumbnails[imageUrl] ||
+    require('@/assets/images/logo_black240.png')
+  )
+}

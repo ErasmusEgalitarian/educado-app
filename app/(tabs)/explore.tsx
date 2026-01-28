@@ -42,6 +42,12 @@ export default function ExploreScreen() {
     loadEnrollments()
   }, [])
 
+  useEffect(() => {
+    if (selectedCourse) {
+      bottomSheetRef.current?.expand()
+    }
+  }, [selectedCourse])
+
   const loadEnrollments = async () => {
     const enrolled: string[] = []
     for (const course of mockCourses) {
@@ -61,7 +67,6 @@ export default function ExploreScreen() {
   const handleCoursePress = (course: Course) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelectedCourse(course)
-    bottomSheetRef.current?.expand()
   }
 
   const handleEnroll = async () => {
@@ -82,6 +87,13 @@ export default function ExploreScreen() {
 
     bottomSheetRef.current?.close()
     router.push(`/(tabs)/courses/${selectedCourse.id}`)
+  }
+
+  const handleBottomSheetChange = (index: number) => {
+    // When bottom sheet is fully closed (index -1), reset selected course
+    if (index === -1) {
+      setSelectedCourse(null)
+    }
   }
 
   const filteredCourses = mockCourses.filter((course) => {
@@ -269,6 +281,7 @@ export default function ExploreScreen() {
           }
           onEnroll={handleEnroll}
           onViewCourse={handleViewCourse}
+          onChange={handleBottomSheetChange}
         />
       </View>
     </GestureHandlerRootView>

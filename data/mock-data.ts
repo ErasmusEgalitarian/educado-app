@@ -7,13 +7,36 @@ export interface Question {
   icon?: string // Icon name for visual aid
 }
 
+// New activity types for mixed interactive sections
+export type ActivityType =
+  | 'video_pause'
+  | 'true_false'
+  | 'text_reading'
+  | 'multiple_choice'
+
+export interface Activity {
+  id: string
+  type: ActivityType
+  // For video_pause type
+  pauseTimestamp?: number // seconds into video when to pause
+  // For text_reading type
+  textPages?: string[] // array of text content for each page
+  // For all question types
+  question?: string
+  imageUrl?: string // optional image for questions (asset name without extension)
+  options?: string[] // for multiple_choice
+  correctAnswer?: number | boolean
+  icon?: string
+}
+
 export interface Section {
   id: string
   title: string
-  videoUrl: string // local asset or placeholder
-  thumbnailUrl: string
-  duration: number // in seconds
-  questions: Question[]
+  videoUrl?: string // optional - only for video-based sections
+  thumbnailUrl?: string
+  duration?: number // in seconds
+  questions?: Question[] // legacy support - deprecated in favor of activities
+  activities?: Activity[] // new mixed activity structure
 }
 
 export interface Course {
@@ -395,6 +418,130 @@ export const mockCourses: Course[] = [
             ],
             correctAnswer: 1,
             icon: 'document-text',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '4',
+    title: 'Finanças Pessoais',
+    shortDescription: 'Aprenda o básico sobre gestão financeira pessoal',
+    description:
+      'Este curso ensina o básico sobre dinheiro: como gastar, guardar e evitar dívidas. É feito para quem está começando e quer cuidar melhor do seu dinheiro. As aulas são simples e com exemplos do dia a dia. Ideal para quem quer aprender a se organizar e planejar o futuro.',
+    imageUrl: 'course-waste-sorting',
+    difficulty: 'beginner',
+    estimatedTime: '25 min',
+    passingThreshold: 70,
+    category: 'finance',
+    rating: 4.5,
+    tags: ['finanças', 'dinheiro', 'planejamento', 'economia'],
+    sections: [
+      {
+        id: '4-1',
+        title: 'Introdução ao curso de finanças',
+        activities: [
+          {
+            id: '4-1-a1',
+            type: 'text_reading',
+            textPages: [
+              'Este curso ensina o básico sobre dinheiro: como gastar, guardar e evitar dívidas. É feito para quem está começando e quer cuidar melhor do seu dinheiro. As aulas são simples e com exemplos do dia a dia. Ideal para quem quer aprender a se organizar e planejar o futuro.',
+              'Você vai aprender sobre orçamento familiar, como economizar dinheiro no dia a dia, evitar dívidas e planejar seu futuro financeiro. Vamos usar exemplos práticos que você pode aplicar imediatamente na sua vida.',
+            ],
+          },
+          {
+            id: '4-1-a2',
+            type: 'multiple_choice',
+            question: 'Qual é o principal objetivo deste curso?',
+            options: [
+              'Aprender a investir na bolsa de valores',
+              'Aprender o básico sobre gestão financeira pessoal',
+              'Aprender a abrir uma empresa',
+              'Aprender sobre criptomoedas',
+            ],
+            correctAnswer: 1,
+            icon: 'school',
+          },
+        ],
+      },
+      {
+        id: '4-2',
+        title: 'Conceitos básicos de finanças',
+        videoUrl: SAMPLE_VIDEO_URL,
+        thumbnailUrl: 'section-1-1',
+        duration: 180,
+        activities: [
+          {
+            id: '4-2-a1',
+            type: 'video_pause',
+            pauseTimestamp: 5,
+            question: 'Qual animal é conhecido como o rei da selva?',
+            options: [
+              'O planeta Marte é conhecido como o famoso planeta vermelho.',
+              'O leão é conhecido como o rei da selva.',
+              'O elefante é o maior animal terrestre.',
+              'A águia é a rainha dos céus.',
+            ],
+            correctAnswer: 1,
+            icon: 'help-circle',
+          },
+          {
+            id: '4-2-a2',
+            type: 'video_pause',
+            pauseTimestamp: 15,
+            question:
+              'Anotar o que entra e o que sai ajuda a entender pra onde o dinheiro tá indo.',
+            correctAnswer: true,
+            icon: 'cash',
+          },
+          {
+            id: '4-2-a3',
+            type: 'video_pause',
+            pauseTimestamp: 25,
+            question: 'O que é orçamento familiar?',
+            options: [
+              'É o dinheiro que você guarda no banco',
+              'É um plano de quanto dinheiro entra e sai da casa',
+              'É o valor das contas de água e luz',
+              'É o salário mensal',
+            ],
+            correctAnswer: 1,
+            icon: 'home',
+          },
+        ],
+      },
+      {
+        id: '4-3',
+        title: 'Economizando no dia a dia',
+        activities: [
+          {
+            id: '4-3-a1',
+            type: 'text_reading',
+            textPages: [
+              'Economizar dinheiro não precisa ser difícil. Pequenas mudanças no dia a dia podem fazer uma grande diferença no final do mês.',
+              'Algumas dicas práticas: evite compras por impulso, compare preços antes de comprar, aproveite promoções, e sempre pergunte: eu realmente preciso disso agora?',
+              'Lembre-se: cada real economizado é um real que pode ser usado para realizar seus sonhos e objetivos futuros.',
+            ],
+          },
+          {
+            id: '4-3-a2',
+            type: 'true_false',
+            question: 'Comprar por impulso ajuda a economizar dinheiro.',
+            correctAnswer: false,
+            icon: 'cart',
+          },
+          {
+            id: '4-3-a3',
+            type: 'multiple_choice',
+            question: 'Qual é uma boa prática para economizar?',
+            options: [
+              'Comprar sempre que ver uma promoção',
+              'Comparar preços antes de comprar',
+              'Nunca olhar o preço das coisas',
+              'Usar sempre o cartão de crédito',
+            ],
+            correctAnswer: 1,
+            icon: 'pricetag',
           },
         ],
       },

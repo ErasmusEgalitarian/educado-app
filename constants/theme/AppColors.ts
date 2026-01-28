@@ -10,13 +10,17 @@ export const AppColors = () => ({
   secondary: '#2398F3', // Blue - trust
   tertiary: '#7B8794', // Gray-blue for secondary actions
   success: '#66BB6A', // Light green
+  successBright: '#8FB442', // Bright green for true/false buttons
   warning: '#FFA726', // Orange
   error: '#EF5350', // Red
+  errorBright: '#C84B4B', // Bright red for true/false buttons
 
   // Backgrounds
   backgroundPrimary: '#FAFEFF', // Main app background
   backgroundSecondary: '#FAFEFF', // Secondary background (same as primary)
+  backgroundTeal: '#5A9FA8', // Teal background for sections
   cardBackground: '#FDFEFF', // Card background
+  cardBackgroundLight: '#D4E8EA', // Light blue card background
 
   // Text colors
   textPrimary: '#212121',
