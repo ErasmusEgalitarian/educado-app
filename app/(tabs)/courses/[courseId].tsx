@@ -8,7 +8,9 @@ import { unenrollFromCourse } from '@/utils/enrollment-storage'
 import {
   getCourseCompletionPercentage,
   getCourseProgress,
+  getCourseScorePercentage,
   getFirstIncompleteSectionId,
+  isCourseCompleted,
   isSectionCompleted,
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
@@ -42,6 +44,8 @@ export default function CourseDetailScreen() {
   const [sectionScores, setSectionScores] = useState<
     Map<string, { score: number; totalQuestions: number }>
   >(new Map())
+  const [courseCompleted, setCourseCompleted] = useState(false)
+  const [courseScorePercentage, setCourseScorePercentage] = useState(0)
 
   const loadProgress = useCallback(async () => {
     if (!course) return
@@ -70,6 +74,16 @@ export default function CourseDetailScreen() {
       course.sections.length
     )
     setCompletionPercentage(percentage)
+
+    // Check if course is completed
+    const isCompleted = await isCourseCompleted(courseId, course.sections.length)
+    setCourseCompleted(isCompleted)
+
+    // Get overall course score if completed
+    if (isCompleted) {
+      const overallScore = await getCourseScorePercentage(courseId)
+      setCourseScorePercentage(overallScore)
+    }
   }, [course, courseId])
 
   // Load progress on initial mount
@@ -247,17 +261,67 @@ export default function CourseDetailScreen() {
           </View>
         </View>
 
+        {/* Show message if completed but didn't pass */}
+        {courseCompleted && courseScorePercentage < course.passingThreshold && (
+          <View
+            style={[
+              styles.notPassedBanner,
+              { backgroundColor: colors.warning + '15', borderColor: colors.warning },
+            ]}
+          >
+            <Ionicons name="alert-circle" size={24} color={colors.warning} />
+            <View style={styles.notPassedTextContainer}>
+              <Text
+                style={[styles.notPassedTitle, { color: colors.textPrimary }]}
+              >
+                {t('course.courseCompleted')}
+              </Text>
+              <Text
+                style={[styles.notPassedMessage, { color: colors.textSecondary }]}
+              >
+                {t('course.yourScore', {
+                  score: courseScorePercentage,
+                  passing: course.passingThreshold,
+                })}
+              </Text>
+              <Text
+                style={[styles.notPassedHint, { color: colors.textSecondary }]}
+              >
+                {t('course.retakeMessage')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Start/Continue Button */}
-        <TouchableOpacity
-          style={[styles.startButton, { backgroundColor: colors.primary }]}
-          onPress={handleStartCourse}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.startButtonText}>
-            {isStarted ? t('course.continueLearning') : t('course.startCourse')}
-          </Text>
-          <Ionicons name="play-circle" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        {!courseCompleted && (
+          <TouchableOpacity
+            style={[styles.startButton, { backgroundColor: colors.primary }]}
+            onPress={handleStartCourse}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.startButtonText}>
+              {isStarted ? t('course.continueLearning') : t('course.startCourse')}
+            </Text>
+            <Ionicons name="play-circle" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+
+        {/* View Certificate Button (if passed) */}
+        {courseCompleted && courseScorePercentage >= course.passingThreshold && (
+          <TouchableOpacity
+            style={[styles.startButton, { backgroundColor: colors.success }]}
+            onPress={() =>
+              router.push(`/(tabs)/courses/${courseId}/certificate`)
+            }
+            activeOpacity={0.8}
+          >
+            <Text style={styles.startButtonText}>
+              {t('course.viewCertificate')}
+            </Text>
+            <Ionicons name="ribbon" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
 
         {/* Sections List */}
         <View style={styles.sectionsContainer}>
@@ -402,6 +466,34 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  notPassedBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginHorizontal: 24,
+    marginBottom: 24,
+    gap: 12,
+  },
+  notPassedTextContainer: {
+    flex: 1,
+  },
+  notPassedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  notPassedMessage: {
+    fontSize: 14,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  notPassedHint: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    lineHeight: 20,
   },
   sectionsContainer: {
     paddingHorizontal: 24,

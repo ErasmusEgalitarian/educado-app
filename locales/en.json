@@ -99,7 +99,18 @@
     "false": "False",
     "checkAnswer": "Check Answer",
     "nextQuestion": "Next Question",
-    "viewResults": "View Results"
+    "viewResults": "View Results",
+    "exitActivity": "Exit Activity",
+    "exitConfirmTitle": "Exit Activity?",
+    "exitConfirmMessage": "Your progress will be saved. Are you sure you want to exit?",
+    "exitConfirm": "Exit",
+    "readAllPages": "Read all pages to continue",
+    "completeAndContinue": "Complete and Continue",
+    "replaySection": "Replay Section",
+    "correct": "Correct!",
+    "incorrect": "Incorrect. The answer is {{answer}}.",
+    "correctAnswer": "Correct answer",
+    "courseName": "Course Name"
   },
   "results": {
     "greatJob": "Great Job!",

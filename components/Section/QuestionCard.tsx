@@ -1,9 +1,10 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { Question } from '@/data/mock-data'
+import { imageLoader } from '@/utils/image-loader'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import ButtonPrimary from '../Common/ButtonPrimary'
 
 interface QuestionCardProps {
@@ -12,6 +13,7 @@ interface QuestionCardProps {
   showResult?: boolean
   currentQuestion: number
   totalQuestions: number
+  imageUrl?: string // Optional image asset name (without extension)
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -19,6 +21,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer,
   currentQuestion,
   totalQuestions,
+  imageUrl,
 }) => {
   const colors = AppColors()
   const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(
@@ -165,6 +168,17 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </View>
 
+      {/* Optional Image */}
+      {imageUrl && (
+        <View style={styles.imageContainer}>
+          <Image
+            source={imageLoader(imageUrl)}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+
       <Text style={[styles.questionText, { color: colors.textPrimary }]}>
         {question.question}
       </Text>
@@ -261,6 +275,18 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#D3C5B8',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   questionText: {
     fontSize: 22,
