@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { getVideoSource } from '@/utils/video-assets'
 import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
@@ -21,7 +22,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [hasCompletedMinimum, setHasCompletedMinimum] = useState(false)
 
-  const player = useVideoPlayer(videoUrl, (player) => {
+  const player = useVideoPlayer(getVideoSource(videoUrl), (player) => {
     player.loop = false
     player.play()
   })
