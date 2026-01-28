@@ -2,7 +2,7 @@ import Certificate from '@/components/Certificate/Certificate'
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { getCourseById } from '@/data/mock-data'
+import { useCourse } from '@/hooks/api/useCourse'
 import { t } from '@/i18n/config'
 import {
   getCertificate,
@@ -15,6 +15,7 @@ import * as MediaLibrary from 'expo-media-library'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -31,7 +32,8 @@ export default function CertificateScreen() {
   const certificateRef = useRef<View>(null)
   const { currentLanguage } = useLanguage()
 
-  const course = getCourseById(courseId)
+  // Fetch course from API
+  const { data: course, isLoading, error } = useCourse(courseId)
   const [userName, setUserName] = useState('Learner')
   const [completionDate, setCompletionDate] = useState(new Date().toISOString())
   const [isDownloading, setIsDownloading] = useState(false)
@@ -137,17 +139,47 @@ export default function CertificateScreen() {
     router.push('/(tabs)')
   }
 
-  if (!course) {
+  // Show loading state
+  if (isLoading) {
     return (
       <View
         style={[
           styles.container,
+          styles.centerContainer,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Text style={{ color: colors.textPrimary }}>
-          {t('errors.loadCourse')}
+        <ActivityIndicator size="large" color="#4A90A4" />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          {t('certificate.loading') || 'Loading certificate...'}
         </Text>
+      </View>
+    )
+  }
+
+  // Show error state
+  if (error || !course) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContainer,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <Ionicons name="alert-circle" size={64} color="#EF4444" />
+        <Text style={[styles.errorText, { color: colors.textPrimary }]}>
+          {t('errors.loadCourse') || 'Failed to load course'}
+        </Text>
+        <TouchableOpacity
+          style={styles.errorBackButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.errorBackButtonText}>
+            {t('certificate.back') || 'Go Back'}
+          </Text>
+        </TouchableOpacity>
       </View>
     )
   }
@@ -333,5 +365,32 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  errorBackButton: {
+    backgroundColor: '#4A90A4',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  errorBackButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

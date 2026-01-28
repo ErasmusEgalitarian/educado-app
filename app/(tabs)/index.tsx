@@ -1,6 +1,7 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course, mockCourses } from '@/data/mock-data'
+import { Course } from '@/data/mock-data'
+import { useCourses } from '@/hooks/api/useCourses'
 import { t } from '@/i18n/config'
 import { getEnrolledCourses } from '@/utils/enrollment-storage'
 import { getCourseCompletionPercentage } from '@/utils/progress-storage'
@@ -10,6 +11,7 @@ import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,25 +28,17 @@ export default function CoursesScreen() {
   )
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([])
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  // Fetch courses from API
+  const { data: courses, isLoading, error } = useCourses()
 
-  // Reload enrolled courses when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadData()
-    }, [])
-  )
+  const loadData = useCallback(async () => {
+    if (!courses?.length) return
 
-  const loadData = async () => {
     // Load enrolled course IDs
     const enrolledIds = await getEnrolledCourses()
 
     // Filter courses to only show enrolled ones
-    const enrolled = mockCourses.filter((course) =>
-      enrolledIds.includes(course.id)
-    )
+    const enrolled = courses.filter((course) => enrolledIds.includes(course.id))
     setEnrolledCourses(enrolled)
 
     // Load progress for enrolled courses
@@ -52,12 +46,27 @@ export default function CoursesScreen() {
     for (const course of enrolled) {
       const percentage = await getCourseCompletionPercentage(
         course.id,
-        course.sections.length
+        course.sections?.length || 0
       )
       progress[course.id] = percentage
     }
     setCourseProgress(progress)
-  }
+  }, [courses])
+
+  useEffect(() => {
+    if (courses) {
+      loadData()
+    }
+  }, [courses, loadData])
+
+  // Reload enrolled courses when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (courses) {
+        loadData()
+      }
+    }, [courses, loadData])
+  )
 
   const handleCoursePress = (courseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -69,9 +78,12 @@ export default function CoursesScreen() {
     let completedSections = 0
     let totalSections = 0
     enrolledCourses.forEach((course) => {
-      totalSections += course.sections.length
+      if (!course.sections?.length) return
+      totalSections += course.sections?.length || 0
       const progress = courseProgress[course.id] || 0
-      completedSections += Math.round((progress / 100) * course.sections.length)
+      completedSections += Math.round(
+        (progress / 100) * (course.sections?.length || 0)
+      )
     })
     return { completedSections, totalSections }
   }
@@ -80,6 +92,44 @@ export default function CoursesScreen() {
   const levelProgress =
     totalSections > 0 ? (completedSections / totalSections) * 100 : 0
   const pointsToNextLevel = 10
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View
+        key={currentLanguage}
+        style={[
+          styles.container,
+          styles.centerContainer,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#4A90A4" />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          {t('home.loading') || 'Loading...'}
+        </Text>
+      </View>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View
+        key={currentLanguage}
+        style={[
+          styles.container,
+          styles.centerContainer,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <Ionicons name="alert-circle" size={64} color="#EF4444" />
+        <Text style={[styles.errorText, { color: colors.textPrimary }]}>
+          {t('home.error') || 'Failed to load courses'}
+        </Text>
+      </View>
+    )
+  }
 
   // Show message if no enrolled courses
   if (enrolledCourses.length === 0) {
@@ -200,9 +250,9 @@ export default function CoursesScreen() {
         {enrolledCourses.map((course) => {
           const progress = courseProgress[course.id] || 0
           const completedCount = Math.round(
-            (progress / 100) * course.sections.length
+            (progress / 100) * (course.sections?.length || 0)
           )
-          const totalCount = course.sections.length
+          const totalCount = course.sections?.length || 0
 
           return (
             <TouchableOpacity
@@ -445,5 +495,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
   },
 })
