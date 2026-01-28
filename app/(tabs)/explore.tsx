@@ -1,7 +1,8 @@
 import CourseDetailsBottomSheet from '@/components/Explore/CourseDetailsBottomSheet'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course, mockCourses } from '@/data/mock-data'
+import { Course } from '@/data/mock-data'
+import { useCourses } from '@/hooks/api/useCourses'
 import { t } from '@/i18n/config'
 import { enrollInCourse, isEnrolledInCourse } from '@/utils/enrollment-storage'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,8 +10,9 @@ import BottomSheet from '@gorhom/bottom-sheet'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,6 +32,9 @@ export default function ExploreScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const bottomSheetRef = useRef<BottomSheet>(null)
 
+  // Fetch courses from API
+  const { data: courses, isLoading, error, refetch } = useCourses()
+
   const categories = [
     { id: 'all', label: t('explore.all') },
     { id: 'finance', label: t('explore.finance') },
@@ -38,26 +43,29 @@ export default function ExploreScreen() {
     { id: 'science', label: t('explore.science') },
   ]
 
-  useEffect(() => {
-    loadEnrollments()
-  }, [])
-
-  useEffect(() => {
-    if (selectedCourse) {
-      bottomSheetRef.current?.expand()
-    }
-  }, [selectedCourse])
-
-  const loadEnrollments = async () => {
+  const loadEnrollments = useCallback(async () => {
+    if (!courses) return
     const enrolled: string[] = []
-    for (const course of mockCourses) {
+    for (const course of courses) {
       const isEnrolled = await isEnrolledInCourse(course.id)
       if (isEnrolled) {
         enrolled.push(course.id)
       }
     }
     setEnrolledCourses(enrolled)
-  }
+  }, [courses])
+
+  useEffect(() => {
+    if (courses) {
+      loadEnrollments()
+    }
+  }, [courses, loadEnrollments])
+
+  useEffect(() => {
+    if (selectedCourse) {
+      bottomSheetRef.current?.expand()
+    }
+  }, [selectedCourse])
 
   const handleCategoryPress = (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -96,7 +104,7 @@ export default function ExploreScreen() {
     }
   }
 
-  const filteredCourses = mockCourses.filter((course) => {
+  const filteredCourses = (courses || []).filter((course) => {
     const matchesSearch = course.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
@@ -188,88 +196,121 @@ export default function ExploreScreen() {
             })}
           </ScrollView>
 
-          {/* Course Cards */}
-          {filteredCourses.map((course) => (
-            <TouchableOpacity
-              key={course.id}
-              style={[
-                styles.courseCard,
-                { backgroundColor: colors.cardBackground },
-              ]}
-              onPress={() => handleCoursePress(course)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.courseHeader}>
-                <Ionicons
-                  name="bar-chart"
-                  size={28}
-                  color={colors.textPrimary}
-                />
-                <Text
-                  style={[styles.courseTitle, { color: colors.textPrimary }]}
-                >
-                  {course.title}
+          {/* Loading State */}
+          {isLoading && (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color="#4A90A4" />
+              <Text
+                style={[styles.loadingText, { color: colors.textSecondary }]}
+              >
+                {t('explore.loading') || 'Loading courses...'}
+              </Text>
+            </View>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <View style={styles.centerContainer}>
+              <Ionicons name="alert-circle" size={64} color="#EF4444" />
+              <Text style={[styles.errorText, { color: colors.textPrimary }]}>
+                {t('explore.error') || 'Failed to load courses'}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => refetch()}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.retryButtonText}>
+                  {t('explore.retry') || 'Retry'}
                 </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={24}
-                  color={colors.textSecondary}
-                />
-              </View>
+              </TouchableOpacity>
+            </View>
+          )}
 
-              <View style={styles.courseDivider} />
-
-              <View style={styles.courseMetadata}>
-                <View style={styles.metadataRow}>
+          {/* Course Cards */}
+          {!isLoading &&
+            !error &&
+            filteredCourses.map((course) => (
+              <TouchableOpacity
+                key={course.id}
+                style={[
+                  styles.courseCard,
+                  { backgroundColor: colors.cardBackground },
+                ]}
+                onPress={() => handleCoursePress(course)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.courseHeader}>
                   <Ionicons
-                    name="school-outline"
-                    size={18}
-                    color={colors.textSecondary}
+                    name="bar-chart"
+                    size={28}
+                    color={colors.textPrimary}
                   />
                   <Text
-                    style={[
-                      styles.metadataText,
-                      { color: colors.textSecondary },
-                    ]}
+                    style={[styles.courseTitle, { color: colors.textPrimary }]}
                   >
-                    {course.shortDescription}
+                    {course.title}
                   </Text>
-                </View>
-
-                <View style={styles.metadataRow}>
                   <Ionicons
-                    name="time-outline"
-                    size={18}
+                    name="chevron-down"
+                    size={24}
                     color={colors.textSecondary}
                   />
-                  <Text
-                    style={[
-                      styles.metadataText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {course.estimatedTime}
-                  </Text>
                 </View>
 
-                <View style={styles.metadataRow}>
-                  <Ionicons
-                    name="trending-up"
-                    size={18}
-                    color={colors.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.metadataText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t('explore.basic')}
-                  </Text>
+                <View style={styles.courseDivider} />
+
+                <View style={styles.courseMetadata}>
+                  <View style={styles.metadataRow}>
+                    <Ionicons
+                      name="school-outline"
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.metadataText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {course.shortDescription}
+                    </Text>
+                  </View>
+
+                  <View style={styles.metadataRow}>
+                    <Ionicons
+                      name="time-outline"
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.metadataText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {course.estimatedTime}
+                    </Text>
+                  </View>
+
+                  <View style={styles.metadataRow}>
+                    <Ionicons
+                      name="trending-up"
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.metadataText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t('explore.basic')}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))}
         </ScrollView>
 
         {/* Bottom Sheet */}
@@ -388,5 +429,33 @@ const styles = StyleSheet.create({
   metadataText: {
     fontSize: 15,
     flex: 1,
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 8,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#4A90A4',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

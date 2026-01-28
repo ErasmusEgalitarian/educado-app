@@ -5,13 +5,8 @@ import TextReadingCard from '@/components/Section/TextReadingCard'
 import TrueFalseCard from '@/components/Section/TrueFalseCard'
 import VideoPlayerWithPauses from '@/components/Section/VideoPlayerWithPauses'
 import { AppColors } from '@/constants/theme/AppColors'
-import {
-  Activity,
-  ActivityType,
-  getCourseById,
-  getNextSection,
-  getSectionById,
-} from '@/data/mock-data'
+import { Activity, ActivityType, Section } from '@/data/mock-data'
+import { useCourse } from '@/hooks/api/useCourse'
 import { t } from '@/i18n/config'
 import {
   hasPassedCourse,
@@ -19,10 +14,12 @@ import {
   markCourseCompleted,
   saveSectionProgress,
 } from '@/utils/progress-storage'
+import { syncProgressToBackend } from '@/utils/progress-sync'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -49,8 +46,23 @@ export default function SectionScreen() {
   const colors = AppColors()
   const insets = useSafeAreaInsets()
 
-  const course = getCourseById(courseId)
-  const section = getSectionById(courseId, sectionId)
+  // Fetch course from API
+  const { data: course, isLoading, error } = useCourse(courseId)
+
+  // Get section from course
+  const section = useMemo(() => {
+    return course?.sections.find((s) => s.id === sectionId)
+  }, [course, sectionId])
+
+  // Get next section
+  const getNextSection = (): Section | null => {
+    if (!course) return null
+    const currentIndex = course.sections.findIndex((s) => s.id === sectionId)
+    if (currentIndex === -1 || currentIndex === course.sections.length - 1) {
+      return null
+    }
+    return course.sections[currentIndex + 1]
+  }
 
   const [phase, setPhase] = useState<Phase>('activities')
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0)
@@ -61,7 +73,7 @@ export default function SectionScreen() {
   const [isVideoComplete, setIsVideoComplete] = useState(false)
 
   // Get activities from section (support both legacy questions and new activities)
-  const activities: Activity[] = React.useMemo(() => {
+  const activities: Activity[] = useMemo(() => {
     if (section?.activities && section.activities.length > 0) {
       return section.activities
     }
@@ -93,7 +105,26 @@ export default function SectionScreen() {
     setIsVideoComplete(false)
   }, [sectionId])
 
-  if (!course || !section || activities.length === 0) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContainer,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#4A90A4" />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          {t('section.loading') || 'Loading section...'}
+        </Text>
+      </View>
+    )
+  }
+
+  // Show error state
+  if (error || !course || !section || activities.length === 0) {
     return (
       <View
         style={[
@@ -227,7 +258,7 @@ export default function SectionScreen() {
     const correctAnswers = activityAnswers.filter((a) => a.isCorrect).length
     const totalActivities = activities.length
 
-    // Save progress
+    // Save progress locally
     await saveSectionProgress(
       courseId,
       sectionId,
@@ -236,7 +267,7 @@ export default function SectionScreen() {
     )
 
     // Check if all sections are completed
-    const nextSection = getNextSection(courseId, sectionId)
+    const nextSection = getNextSection()
     const courseCompleted = await isCourseCompleted(
       courseId,
       course.sections.length
@@ -251,15 +282,27 @@ export default function SectionScreen() {
 
       await markCourseCompleted(courseId)
 
+      // Sync to backend (don't await to not block navigation)
+      syncProgressToBackend(courseId).catch((err) =>
+        console.error('Background sync failed:', err)
+      )
+
       if (passed) {
         router.replace(`/(tabs)/courses/${courseId}/certificate`)
       } else {
         router.replace(`/(tabs)/courses/${courseId}`)
       }
-    } else if (nextSection) {
-      router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
     } else {
-      router.replace(`/(tabs)/courses/${courseId}`)
+      // Sync to backend (don't await to not block navigation)
+      syncProgressToBackend(courseId).catch((err) =>
+        console.error('Background sync failed:', err)
+      )
+
+      if (nextSection) {
+        router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
+      } else {
+        router.replace(`/(tabs)/courses/${courseId}`)
+      }
     }
   }
 
@@ -817,5 +860,13 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 16,
   },
 })
