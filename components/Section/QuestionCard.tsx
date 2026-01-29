@@ -179,9 +179,23 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         </View>
       )}
 
-      <Text style={[styles.questionText, { color: colors.textPrimary }]}>
-        {question.question}
-      </Text>
+      <View style={styles.questionContainer}>
+        <Text style={[styles.questionText, { color: colors.textPrimary }]}>
+          {question.question}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.speakerButton,
+            { backgroundColor: colors.primaryLight },
+          ]}
+          onPress={() => {
+            // TODO: Implement text-to-speech functionality
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          }}
+        >
+          <Ionicons name="volume-high" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.answersContainer}>
         {question.type === 'true_false' ? (
@@ -288,11 +302,25 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  questionContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 24,
+  },
   questionText: {
     fontSize: 22,
     fontWeight: '600',
     lineHeight: 32,
-    marginBottom: 24,
+    flex: 1,
+  },
+  speakerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
   },
   answersContainer: {
     gap: 12,

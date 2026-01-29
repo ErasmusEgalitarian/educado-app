@@ -1,10 +1,13 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useSyncAllProgress } from '@/hooks/api/useProgressSync'
 import { changeLanguage, t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -19,6 +22,7 @@ export default function ProfileScreen() {
   const { currentLanguage, refreshLanguage } = useLanguage()
   const insets = useSafeAreaInsets()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
+  const { mutate: syncAll, isPending: isSyncing } = useSyncAllProgress()
 
   // Mock data - replace with real data later
   const userInitials = 'AA'
@@ -33,6 +37,19 @@ export default function ProfileScreen() {
 
     if (screen === 'language') {
       setShowLanguageModal(true)
+      return
+    }
+
+    if (screen === 'sync') {
+      syncAll(undefined, {
+        onSuccess: () => {
+          Alert.alert('Success', 'Progress synced successfully')
+        },
+        onError: (error) => {
+          Alert.alert('Error', 'Failed to sync progress')
+          console.error(error)
+        },
+      })
       return
     }
 
@@ -57,6 +74,11 @@ export default function ProfileScreen() {
       id: 'certificates',
       label: t('profile.certificates'),
       icon: 'ribbon-outline',
+    },
+    {
+      id: 'sync',
+      label: 'Sync Progress',
+      icon: 'cloud-upload-outline',
     },
     { id: 'ranking', label: t('profile.ranking'), icon: 'trophy-outline' },
     {
@@ -163,12 +185,16 @@ export default function ProfileScreen() {
                     {item.value}
                   </Text>
                 )}
-                <Ionicons
-                  name="chevron-forward"
-                  size={24}
-                  color={colors.textSecondary}
-                />
-              </View>
+                {item.id === 'sync' && isSyncing ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={24}
+                    color={colors.textSecondary}
+                  />
+                )}
+              </View>>
             </TouchableOpacity>
           ))}
         </View>

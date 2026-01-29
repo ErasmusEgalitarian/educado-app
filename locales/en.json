@@ -18,6 +18,14 @@
   "landing": {
     "title": "Welcome"
   },
+  "login": {
+    "title": "Welcome to Educado",
+    "subtitle": "Enter your username to get started",
+    "usernamePlaceholder": "Enter username",
+    "loginButton": "Continue",
+    "usernameError": "Username must be 3-20 characters and contain only letters, numbers, and underscores",
+    "loginError": "Failed to login. Please try again."
+  },
   "tabs": {
     "courses": "Courses",
     "explore": "Explore",
@@ -33,7 +41,9 @@
     "subject": "Math",
     "noCourses": "No Enrolled Courses Yet",
     "exploreToEnroll": "Visit the Explore tab to discover and enroll in courses",
-    "exploreCourses": "Explore Courses"
+    "exploreCourses": "Explore Courses",
+    "loading": "Loading courses...",
+    "error": "Failed to load courses"
   },
   "explore": {
     "title": "Explore Courses",
@@ -49,7 +59,10 @@
     "advanced": "Advanced",
     "enrollNow": "Enroll Now",
     "alreadyEnrolled": "Already Enrolled",
-    "viewCourse": "View Course"
+    "viewCourse": "View Course",
+    "loading": "Loading courses...",
+    "error": "Failed to load courses",
+    "retry": "Retry"
   },
   "profile": {
     "title": "Your Certificates",
@@ -90,7 +103,8 @@
     "unenrollConfirmTitle": "Unenroll from Course?",
     "unenrollConfirmMessage": "Are you sure you want to unenroll from this course? Your progress will be saved.",
     "unenrollConfirm": "Unenroll",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "loading": "Loading course..."
   },
   "section": {
     "question": "Question {{current}} of {{total}}",
@@ -110,7 +124,8 @@
     "correct": "Correct!",
     "incorrect": "Incorrect. The answer is {{answer}}.",
     "correctAnswer": "Correct answer",
-    "courseName": "Course Name"
+    "courseName": "Course Name",
+    "loading": "Loading section..."
   },
   "results": {
     "greatJob": "Great Job!",
@@ -125,7 +140,8 @@
     "certifies": "This certifies that",
     "completed": "has successfully completed the course",
     "date": "Date of Completion",
-    "share": "Share Certificate"
+    "share": "Share Certificate",
+    "loading": "Loading certificate..."
   },
   "errors": {
     "loadCourse": "Failed to load course",

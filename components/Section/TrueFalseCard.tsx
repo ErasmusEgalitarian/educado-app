@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
 import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native'
 
 interface TrueFalseCardProps {
@@ -105,10 +105,24 @@ const TrueFalseCard: React.FC<TrueFalseCardProps> = ({
         </View>
       )}
 
-      {/* Question Text */}
-      <Text style={[styles.question, { color: colors.textPrimary }]}>
-        {question}
-      </Text>
+      {/* Question Text with Speaker */}
+      <View style={styles.questionContainer}>
+        <Text style={[styles.question, { color: colors.textPrimary }]}>
+          {question}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.speakerButton,
+            { backgroundColor: colors.primaryLight },
+          ]}
+          onPress={() => {
+            // TODO: Implement text-to-speech functionality
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          }}
+        >
+          <Ionicons name="volume-high" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
       {/* Activity Counter */}
       <Text style={[styles.counter, { color: colors.textPrimary }]}>
@@ -207,12 +221,27 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  questionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    width: '100%',
+    justifyContent: 'center',
+  },
   question: {
     fontSize: 20,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 16,
     lineHeight: 28,
+    flex: 1,
+  },
+  speakerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   counter: {
     fontSize: 16,

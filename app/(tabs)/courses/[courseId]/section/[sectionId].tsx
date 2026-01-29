@@ -7,6 +7,7 @@ import VideoPlayerWithPauses from '@/components/Section/VideoPlayerWithPauses'
 import { AppColors } from '@/constants/theme/AppColors'
 import { Activity, ActivityType, Section } from '@/data/mock-data'
 import { useCourse } from '@/hooks/api/useCourse'
+import { useSyncProgressToBackend } from '@/hooks/api/useProgressSync'
 import { t } from '@/i18n/config'
 import {
   hasPassedCourse,
@@ -14,7 +15,6 @@ import {
   markCourseCompleted,
   saveSectionProgress,
 } from '@/utils/progress-storage'
-import { syncProgressToBackend } from '@/utils/progress-sync'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -48,6 +48,9 @@ export default function SectionScreen() {
 
   // Fetch course from API
   const { data: course, isLoading, error } = useCourse(courseId)
+
+  // Sync mutation
+  const { mutate: syncProgress } = useSyncProgressToBackend()
 
   // Get section from course
   const section = useMemo(() => {
@@ -170,21 +173,26 @@ export default function SectionScreen() {
   }
 
   const handleContinueAfterVideo = () => {
-    // Check if there are more activities after video pauses
-    const lastVideoPauseIndex = activities
-      .map((a, i) => (a.type === 'video_pause' ? i : -1))
-      .filter((i) => i !== -1)
-      .pop()
+    // Check if there are any unanswered activities
+    const answeredActivityIds = new Set(
+      activityAnswers.map((answer) => answer.activityId)
+    )
 
-    if (
-      lastVideoPauseIndex !== undefined &&
-      lastVideoPauseIndex < activities.length - 1
-    ) {
-      // Move to next activity after video
-      setCurrentActivityIndex(lastVideoPauseIndex + 1)
-      setIsVideoComplete(false)
+    const unansweredActivities = activities.filter(
+      (activity) => !answeredActivityIds.has(activity.id)
+    )
+
+    if (unansweredActivities.length > 0) {
+      // Find the first unanswered activity
+      const firstUnansweredIndex = activities.findIndex(
+        (activity) => !answeredActivityIds.has(activity.id)
+      )
+
+      if (firstUnansweredIndex !== -1) {
+        setCurrentActivityIndex(firstUnansweredIndex)
+      }
     } else {
-      // No more activities, show results
+      // All activities answered, show results
       setPhase('results')
     }
   }
@@ -208,8 +216,8 @@ export default function SectionScreen() {
       if (isLastActivity) {
         setPhase('results')
       } else {
-        // If this was a video pause, resume video
-        if (currentActivity.type === 'video_pause') {
+        // If this was a video pause, resume video only if video is not complete
+        if (currentActivity.type === 'video_pause' && !isVideoComplete) {
           setIsVideoPaused(false)
         }
         setCurrentActivityIndex(currentActivityIndex + 1)
@@ -283,9 +291,7 @@ export default function SectionScreen() {
       await markCourseCompleted(courseId)
 
       // Sync to backend (don't await to not block navigation)
-      syncProgressToBackend(courseId).catch((err) =>
-        console.error('Background sync failed:', err)
-      )
+      syncProgress(courseId)
 
       if (passed) {
         router.replace(`/(tabs)/courses/${courseId}/certificate`)
@@ -294,9 +300,7 @@ export default function SectionScreen() {
       }
     } else {
       // Sync to backend (don't await to not block navigation)
-      syncProgressToBackend(courseId).catch((err) =>
-        console.error('Background sync failed:', err)
-      )
+      syncProgress(courseId)
 
       if (nextSection) {
         router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
@@ -313,6 +317,47 @@ export default function SectionScreen() {
 
   const renderActivity = () => {
     if (!currentActivity) return null
+
+    // If video is complete, render video_pause activities as standalone questions
+    const shouldRenderAsStandalone =
+      currentActivity.type === 'video_pause' && isVideoComplete
+
+    if (shouldRenderAsStandalone) {
+      return (
+        <ScrollView
+          style={styles.activityScroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {currentActivity.correctAnswer === true ||
+          currentActivity.correctAnswer === false ? (
+            <TrueFalseCard
+              question={currentActivity.question || ''}
+              imageUrl={currentActivity.imageUrl}
+              onAnswer={handleActivityAnswer}
+              correctAnswer={currentActivity.correctAnswer}
+              currentActivity={currentActivityIndex + 1}
+              totalActivities={activities.length}
+            />
+          ) : (
+            <QuestionCard
+              question={{
+                id: currentActivity.id,
+                type: 'multiple_choice',
+                question: currentActivity.question || '',
+                options: currentActivity.options || [],
+                correctAnswer: currentActivity.correctAnswer as number,
+                icon: currentActivity.icon,
+              }}
+              onAnswer={handleActivityAnswer}
+              currentQuestion={currentActivityIndex + 1}
+              totalQuestions={activities.length}
+              imageUrl={currentActivity.imageUrl}
+            />
+          )}
+        </ScrollView>
+      )
+    }
 
     switch (currentActivity.type) {
       case 'video_pause':
@@ -700,10 +745,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
   },
   videoActivityContainer: {
     flex: 1,

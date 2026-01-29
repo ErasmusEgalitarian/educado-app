@@ -63,11 +63,22 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
           </Text>
         </View>
 
-        {/* Text Content */}
+        {/* Text Content with Speaker */}
         <View style={styles.textContainer}>
-          <Text style={[styles.textContent, { color: colors.textPrimary }]}>
-            {textPages[currentPage]}
-          </Text>
+          <View style={styles.textHeader}>
+            <Text style={[styles.textContent, { color: colors.textPrimary }]}>
+              {textPages[currentPage]}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.speakerButton, { backgroundColor: colors.primaryLight }]}
+            onPress={() => {
+              // TODO: Implement text-to-speech functionality
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            }}
+          >
+            <Ionicons name="volume-high" size={24} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Page Counter */}
@@ -162,11 +173,24 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
     marginBottom: 24,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  textHeader: {
+    flex: 1,
   },
   textContent: {
     fontSize: 17,
     lineHeight: 26,
     fontWeight: '400',
+  },
+  speakerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   pageCounter: {
     fontSize: 16,
