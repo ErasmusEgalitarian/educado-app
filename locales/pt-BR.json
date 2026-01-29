@@ -18,6 +18,14 @@
   "landing": {
     "title": "Bem-vindo"
   },
+  "login": {
+    "title": "Bem-vindo ao Educado",
+    "subtitle": "Digite seu nome de usuário para começar",
+    "usernamePlaceholder": "Digite o nome de usuário",
+    "loginButton": "Continuar",
+    "usernameError": "O nome de usuário deve ter 3-20 caracteres e conter apenas letras, números e underscores",
+    "loginError": "Falha ao fazer login. Tente novamente."
+  },
   "tabs": {
     "courses": "Cursos",
     "explore": "Explorar",
@@ -33,7 +41,9 @@
     "subject": "Matemática",
     "noCourses": "Nenhum Curso Inscrito Ainda",
     "exploreToEnroll": "Visite a aba Explorar para descobrir e se inscrever em cursos",
-    "exploreCourses": "Explorar Cursos"
+    "exploreCourses": "Explorar Cursos",
+    "loading": "Carregando cursos...",
+    "error": "Falha ao carregar cursos"
   },
   "explore": {
     "title": "Explorar cursos",
@@ -49,7 +59,10 @@
     "advanced": "Avançado",
     "enrollNow": "Inscreva-se agora",
     "alreadyEnrolled": "Já Inscrito",
-    "viewCourse": "Ver Curso"
+    "viewCourse": "Ver Curso",
+    "loading": "Carregando cursos...",
+    "error": "Falha ao carregar cursos",
+    "retry": "Tentar novamente"
   },
   "profile": {
     "title": "Seus Certificados",
@@ -90,7 +103,8 @@
     "unenrollConfirmTitle": "Desinscrever do Curso?",
     "unenrollConfirmMessage": "Tem certeza de que deseja se desinscrever deste curso? Seu progresso será salvo.",
     "unenrollConfirm": "Desinscrever",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "loading": "Carregando curso..."
   },
   "section": {
     "question": "Questão {{current}} de {{total}}",
@@ -110,7 +124,8 @@
     "correct": "Correto!",
     "incorrect": "Incorreto. A resposta é {{answer}}.",
     "correctAnswer": "Resposta correta",
-    "courseName": "Nome do Curso"
+    "courseName": "Nome do Curso",
+    "loading": "Carregando seção..."
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",
@@ -125,7 +140,8 @@
     "certifies": "Certifica que",
     "completed": "completou com sucesso o curso",
     "date": "Data de Conclusão",
-    "share": "Compartilhar Certificado"
+    "share": "Compartilhar Certificado",
+    "loading": "Carregando certificado..."
   },
   "errors": {
     "loadCourse": "Falha ao carregar curso",

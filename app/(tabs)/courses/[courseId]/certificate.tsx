@@ -2,7 +2,10 @@ import Certificate from '@/components/Certificate/Certificate'
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUser } from '@/contexts/UserContext'
 import { useCourse } from '@/hooks/api/useCourse'
+import { useCreateCertificate } from '@/hooks/api/useCreateCertificate'
+import { useGetCertificate } from '@/hooks/api/useGetCertificate'
 import { t } from '@/i18n/config'
 import {
   getCertificate,
@@ -31,10 +34,14 @@ export default function CertificateScreen() {
   const colors = AppColors()
   const certificateRef = useRef<View>(null)
   const { currentLanguage } = useLanguage()
+  const { user } = useUser()
 
-  // Fetch course from API
+  // Fetch course and certificate from API
   const { data: course, isLoading, error } = useCourse(courseId)
-  const [userName, setUserName] = useState('Learner')
+  const { data: backendCertificate, isLoading: isCertificateLoading } =
+    useGetCertificate(courseId)
+  const { mutate: createCertificate } = useCreateCertificate()
+  const [userName, setUserName] = useState(user?.username || 'Learner')
   const [completionDate, setCompletionDate] = useState(new Date().toISOString())
   const [isDownloading, setIsDownloading] = useState(false)
 
@@ -64,30 +71,51 @@ export default function CertificateScreen() {
     }
 
     const courseProgress = await getCourseProgress(courseId)
-    const existingCertificate = await getCertificate(courseId)
+    const localCertificate = await getCertificate(courseId)
 
-    if (existingCertificate) {
-      setUserName(existingCertificate.userName)
-      setCompletionDate(existingCertificate.completedAt)
+    // Determine which certificate to use and sync if needed
+    if (localCertificate && backendCertificate) {
+      // Both exist - use the data
+      setUserName(localCertificate.userName)
+      setCompletionDate(localCertificate.completedAt)
+    } else if (localCertificate && !backendCertificate) {
+      // Exists locally but not in database - sync to backend
+      console.log('Certificate exists locally but not in backend, syncing...')
+      createCertificate(localCertificate)
+      setUserName(localCertificate.userName)
+      setCompletionDate(localCertificate.completedAt)
+    } else if (!localCertificate && backendCertificate) {
+      // Exists in database but not locally - save locally
+      console.log('Certificate exists in backend but not locally, saving...')
+      await saveCertificate(backendCertificate)
+      setUserName(backendCertificate.userName)
+      setCompletionDate(backendCertificate.completedAt)
     } else if (courseProgress.completedAt) {
-      // Create new certificate
+      // Doesn't exist anywhere - create new certificate
+      console.log('Creating new certificate...')
       const newCertificate = {
         courseId,
         courseName: course!.title,
         completedAt: courseProgress.completedAt,
-        userName: 'Learner',
+        userName: user?.username || 'Learner',
         totalSections: course!.sections.length,
       }
+      // Save locally
       await saveCertificate(newCertificate)
+      // Sync to backend
+      createCertificate(newCertificate)
+
+      setUserName(newCertificate.userName)
       setCompletionDate(courseProgress.completedAt)
     }
-  }, [course, courseId, router])
+  }, [course, courseId, createCertificate, router, backendCertificate, user])
 
   useEffect(() => {
-    if (course) {
+    // Wait for both course and certificate check to complete
+    if (course && !isCertificateLoading) {
       loadCertificateData()
     }
-  }, [course, loadCertificateData])
+  }, [course, isCertificateLoading, loadCertificateData])
 
   const handleDownload = async () => {
     try {
@@ -140,7 +168,7 @@ export default function CertificateScreen() {
   }
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || isCertificateLoading) {
     return (
       <View
         style={[
