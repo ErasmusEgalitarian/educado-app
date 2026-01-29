@@ -2,8 +2,8 @@
 // Map video URLs to local require statements
 const VIDEO_ASSETS: Record<string, any> = {
   'Crypto Bro A.mp4': require('@/assets/videos/Crypto Bro A.mp4'),
-  'Desconfiar é se proteger.mp4': require('@/assets/videos/Desconfiar é se proteger.mp4'),
-  'Nunca passar senha ou código.mp4': require('@/assets/videos/Nunca passar senha ou código.mp4'),
+  'Desconfiar e se proteger.mp4': require('@/assets/videos/Desconfiar e se proteger.mp4'),
+  'Nunca passar senha ou codigo.mp4': require('@/assets/videos/Nunca passar senha ou codigo.mp4'),
 }
 
 /**
