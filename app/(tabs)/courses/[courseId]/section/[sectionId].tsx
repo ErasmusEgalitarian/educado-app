@@ -15,6 +15,7 @@ import {
   markCourseCompleted,
   saveSectionProgress,
 } from '@/utils/progress-storage'
+import { syncCertificatesToBackend } from '@/utils/progress-sync'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -289,13 +290,24 @@ export default function SectionScreen() {
       )
 
       await markCourseCompleted(courseId)
+      console.log('🎉 Course completed! Syncing progress and certificates...')
 
-      // Sync to backend (don't await to not block navigation)
+      // Sync progress to backend (don't await to not block navigation)
       syncProgress(courseId)
 
+      // Also sync certificates in case they were created locally
+      syncCertificatesToBackend().catch((error) => {
+        console.error(
+          'Failed to sync certificates after course completion:',
+          error
+        )
+      })
+
       if (passed) {
+        console.log('✅ Course passed! Navigating to certificate page...')
         router.replace(`/(tabs)/courses/${courseId}/certificate`)
       } else {
+        console.log('Course completed but not passed, returning to course page')
         router.replace(`/(tabs)/courses/${courseId}`)
       }
     } else {

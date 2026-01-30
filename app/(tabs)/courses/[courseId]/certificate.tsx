@@ -76,23 +76,33 @@ export default function CertificateScreen() {
     // Determine which certificate to use and sync if needed
     if (localCertificate && backendCertificate) {
       // Both exist - use the data
+      console.log('✅ Certificate exists both locally and on backend')
       setUserName(localCertificate.userName)
       setCompletionDate(localCertificate.completedAt)
     } else if (localCertificate && !backendCertificate) {
       // Exists locally but not in database - sync to backend
-      console.log('Certificate exists locally but not in backend, syncing...')
-      createCertificate(localCertificate)
+      console.log(
+        '🔄 Certificate exists locally but not in backend, syncing to backend...'
+      )
+      createCertificate(localCertificate, {
+        onSuccess: () => {
+          console.log('✅ Certificate synced to backend successfully')
+        },
+        onError: (error) => {
+          console.error('❌ Failed to sync certificate to backend:', error)
+        },
+      })
       setUserName(localCertificate.userName)
       setCompletionDate(localCertificate.completedAt)
     } else if (!localCertificate && backendCertificate) {
       // Exists in database but not locally - save locally
-      console.log('Certificate exists in backend but not locally, saving...')
+      console.log('📥 Certificate exists in backend but not locally, saving...')
       await saveCertificate(backendCertificate)
       setUserName(backendCertificate.userName)
       setCompletionDate(backendCertificate.completedAt)
     } else if (courseProgress.completedAt) {
       // Doesn't exist anywhere - create new certificate
-      console.log('Creating new certificate...')
+      console.log('🎓 Creating new certificate for completed course...')
       const newCertificate = {
         courseId,
         courseName: course!.title,
@@ -100,10 +110,21 @@ export default function CertificateScreen() {
         userName: user?.username || 'Learner',
         totalSections: course!.sections.length,
       }
-      // Save locally
+      // Save locally first
       await saveCertificate(newCertificate)
+      console.log('💾 Certificate saved locally')
+
       // Sync to backend
-      createCertificate(newCertificate)
+      createCertificate(newCertificate, {
+        onSuccess: () => {
+          console.log(
+            '✅ Certificate created and synced to backend successfully'
+          )
+        },
+        onError: (error) => {
+          console.error('❌ Failed to sync new certificate to backend:', error)
+        },
+      })
 
       setUserName(newCertificate.userName)
       setCompletionDate(courseProgress.completedAt)
@@ -121,17 +142,6 @@ export default function CertificateScreen() {
     try {
       setIsDownloading(true)
 
-      // Request permissions
-      const { status } = await MediaLibrary.requestPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please grant camera roll permissions to save the certificate.'
-        )
-        setIsDownloading(false)
-        return
-      }
-
       // Wait a moment to ensure view is fully rendered
       await new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -141,6 +151,18 @@ export default function CertificateScreen() {
           format: 'png',
           quality: 1,
         })
+
+        // Request permission only if needed (writeOnly = true for saving images)
+        const { status } = await MediaLibrary.requestPermissionsAsync(true)
+
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Please grant permission to save the certificate to your gallery.'
+          )
+          setIsDownloading(false)
+          return
+        }
 
         // Save to media library
         await MediaLibrary.createAssetAsync(uri)

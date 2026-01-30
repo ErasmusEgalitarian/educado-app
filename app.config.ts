@@ -38,7 +38,7 @@ export default {
         {
           photosPermission: 'Allow $(PRODUCT_NAME) to save your certificates.',
           savePhotosPermission: 'Allow $(PRODUCT_NAME) to save your certificates.',
-          isAccessMediaLocationEnabled: true,
+          isAccessMediaLocationEnabled: false,
         },
       ],
       [
