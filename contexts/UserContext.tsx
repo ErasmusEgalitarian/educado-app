@@ -81,6 +81,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStore.clear(USER_STORAGE_KEY)
       queryClient.setQueryData(['user'], null)
+      queryClient.invalidateQueries({ queryKey: ['user'] })
     } catch (error) {
       console.error('Error logging out:', error)
       throw error

@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 export default function ProfileScreen() {
   const colors = AppColors()
   const { currentLanguage, refreshLanguage } = useLanguage()
-  const { user } = useUser()
+  const { user, logout } = useUser()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
@@ -75,8 +75,42 @@ export default function ProfileScreen() {
       return
     }
 
+    if (screen === 'logout') {
+      handleLogout()
+      return
+    }
+
     // Navigate to respective screens
     console.log(`Navigate to: ${screen}`)
+  }
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout()
+              setTimeout(() => {
+                router.replace('/(landing)')
+              }, 500)
+            } catch (error) {
+              console.error('Error logging out:', error)
+              Alert.alert('Error', 'Failed to logout. Please try again.')
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    )
   }
 
   const handleSaveUsername = async () => {
@@ -118,6 +152,12 @@ export default function ProfileScreen() {
       label: t('profile.language'),
       icon: 'language-outline',
       value: currentLanguage === 'en' ? 'English' : 'Português',
+    },
+    {
+      id: 'logout',
+      label: 'Logout',
+      icon: 'log-out-outline',
+      isDestructive: true,
     },
   ]
 
@@ -183,7 +223,14 @@ export default function ProfileScreen() {
               onPress={() => handleMenuPress(item.id)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+              <Text
+                style={[
+                  styles.menuLabel,
+                  {
+                    color: item.isDestructive ? '#EF4444' : colors.textPrimary,
+                  },
+                ]}
+              >
                 {item.label}
               </Text>
               <View style={styles.menuRight}>
@@ -207,7 +254,7 @@ export default function ProfileScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={24}
-                  color={colors.textSecondary}
+                  color={item.isDestructive ? '#EF4444' : colors.textSecondary}
                 />
               </View>
             </TouchableOpacity>
