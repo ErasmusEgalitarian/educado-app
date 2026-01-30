@@ -1,6 +1,7 @@
 import { AsyncStore } from '@/utils/async-store'
+import { syncAllProgress } from '@/utils/progress-sync'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import React, { createContext, useContext } from 'react'
+import React, { createContext, useContext, useEffect, useRef } from 'react'
 
 interface User {
   id: string
@@ -56,6 +57,7 @@ async function loginUser(username: string): Promise<User> {
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
+  const hasSyncedOnMount = useRef(false)
 
   // Load user from storage on mount
   const { data: user = null, isLoading } = useQuery({
@@ -65,11 +67,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     gcTime: Infinity,
   })
 
+  // Sync progress and certificates when user is loaded
+  useEffect(() => {
+    if (user && !hasSyncedOnMount.current) {
+      hasSyncedOnMount.current = true
+      console.log('🔄 Syncing progress and certificates on app start...')
+      syncAllProgress().catch((error) => {
+        console.error('Failed to sync on mount:', error)
+      })
+    }
+  }, [user])
+
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: loginUser,
-    onSuccess: (userData) => {
+    onSuccess: async (userData) => {
       queryClient.setQueryData(['user'], userData)
+      // Sync progress and certificates after successful login
+      console.log('🔄 Syncing progress and certificates after login...')
+      try {
+        await syncAllProgress()
+        console.log('✅ Sync completed after login')
+      } catch (error) {
+        console.error('Failed to sync after login:', error)
+      }
     },
   })
 
@@ -82,6 +103,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       await AsyncStore.clear(USER_STORAGE_KEY)
       queryClient.setQueryData(['user'], null)
       queryClient.invalidateQueries({ queryKey: ['user'] })
+      hasSyncedOnMount.current = false
     } catch (error) {
       console.error('Error logging out:', error)
       throw error

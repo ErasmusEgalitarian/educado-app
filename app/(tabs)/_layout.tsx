@@ -1,5 +1,6 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { usePeriodicSync } from '@/hooks/usePeriodicSync'
 import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
@@ -8,6 +9,9 @@ import React from 'react'
 const TabsLayout = () => {
   const colors = AppColors()
   const { currentLanguage } = useLanguage()
+
+  // Enable periodic syncing while in the app
+  usePeriodicSync()
 
   return (
     <Tabs
