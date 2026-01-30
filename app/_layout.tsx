@@ -8,7 +8,7 @@ function RootNavigator() {
 
   return (
     <Stack key={languageVersion} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(landing)/index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   )
