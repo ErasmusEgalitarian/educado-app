@@ -1,4 +1,6 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
+import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
@@ -21,53 +23,58 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [hasCompletedMinimum, setHasCompletedMinimum] = useState(false)
 
-  const player = useVideoPlayer(videoUrl, (player) => {
-    player.loop = false
-    player.play()
+  // If no video URL, show placeholder and auto-complete
+  const hasVideo = !!videoUrl && videoUrl.length > 0
+
+  const player = useVideoPlayer(hasVideo ? videoUrl : null, (p) => {
+    if (hasVideo) {
+      p.loop = false
+      p.play()
+    }
   })
+
+  // Auto-complete if there's no video
+  useEffect(() => {
+    if (!hasVideo && onComplete) {
+      onComplete()
+    }
+  }, [hasVideo, onComplete])
 
   // Auto-play on mount, pause on unmount
   useEffect(() => {
-    if (!player) return
+    if (!player || !hasVideo) return
 
-    // Ensure video starts playing
     player.play()
 
     return () => {
-      // Pause video when component unmounts (navigating away from video phase)
       try {
         player.pause()
-      } catch (err) {
-        // Ignore errors if player is already released
-        console.log('Video player cleanup (already released)', err)
+      } catch {
+        // Ignore if player is already released
       }
     }
-  }, [player])
+  }, [player, hasVideo])
 
   // Track video progress
   useEffect(() => {
-    if (!player) return
+    if (!player || !hasVideo) return
 
     const interval = setInterval(() => {
       try {
-        // Handle error status
         if (player.status === 'error') {
-          setError('Video playback error')
+          setError(t('errors.loadSection'))
           setIsLoading(false)
           return
         }
 
-        // Skip if still loading or idle
         if (player.status === 'loading' || player.status === 'idle') {
           return
         }
 
-        // Video is ready, hide loading
         if (isLoading) {
           setIsLoading(false)
         }
 
-        // Track progress
         const duration = player.duration
         const currentTime = player.currentTime
 
@@ -78,7 +85,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onProgressUpdate(percentage)
           }
 
-          // Trigger completion callback once when threshold is reached
           if (
             !hasCompletedMinimum &&
             percentage >= minimumWatchPercentage &&
@@ -88,8 +94,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onComplete()
           }
         }
-      } catch (err) {
-        console.error('Video player error:', err)
+      } catch {
+        // Ignore transient errors
       }
     }, 500)
 
@@ -98,6 +104,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [
     player,
+    hasVideo,
     isLoading,
     minimumWatchPercentage,
     onComplete,
@@ -105,17 +112,35 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     hasCompletedMinimum,
   ])
 
+  // No video — show placeholder
+  if (!hasVideo) {
+    return (
+      <View
+        style={[styles.container, { backgroundColor: colors.primaryLight }]}
+      >
+        <View style={styles.noVideoContainer}>
+          <Ionicons
+            name="document-text-outline"
+            size={48}
+            color={colors.primary}
+          />
+          <Text style={[styles.noVideoText, { color: colors.textSecondary }]}>
+            {t('section.noVideo')}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
   if (error) {
     return (
       <View
         style={[styles.container, { backgroundColor: colors.primaryLight }]}
       >
         <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={[styles.errorText, { color: colors.error }]}>
-            Unable to load video
-          </Text>
-          <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
-            {error}
+            {t('errors.loadSection')}
           </Text>
         </View>
       </View>
@@ -143,7 +168,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         >
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading video...
+            {t('common.loading')}
           </Text>
         </View>
       )}
@@ -177,13 +202,20 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginTop: 12,
     textAlign: 'center',
   },
-  errorSubtext: {
+  noVideoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  noVideoText: {
     fontSize: 14,
+    marginTop: 12,
     textAlign: 'center',
   },
 })

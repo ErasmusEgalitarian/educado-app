@@ -99,7 +99,8 @@
     "false": "Falso",
     "checkAnswer": "Verificar Resposta",
     "nextQuestion": "Próxima Questão",
-    "viewResults": "Ver Resultados"
+    "viewResults": "Ver Resultados",
+    "noVideo": "Esta seção possui apenas conteúdo textual. Prossiga para as questões abaixo."
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",
@@ -116,9 +117,46 @@
     "date": "Data de Conclusão",
     "share": "Compartilhar Certificado"
   },
+  "auth": {
+    "welcomeTitle": "Bem-vindo ao Educado!",
+    "welcomeSubtitle": "Aprenda, evolua e conquiste certificados com cursos criados por especialistas.",
+    "createAccount": "Criar Conta",
+    "or": "ou",
+    "loginExisting": "Já tenho uma conta",
+    "registerTitle": "Crie sua Conta",
+    "registerSubtitle": "Preencha seu nome para começar. Email e celular são opcionais.",
+    "registerFillRequired": "Nome e sobrenome são obrigatórios",
+    "firstName": "Nome",
+    "firstNamePlaceholder": "Seu nome",
+    "lastName": "Sobrenome",
+    "lastNamePlaceholder": "Seu sobrenome",
+    "emailOptional": "Email (opcional)",
+    "phoneOptional": "Celular (opcional)",
+    "phonePlaceholder": "Seu número de celular",
+    "loginTitle": "Bem-vindo de Volta",
+    "loginSubtitle": "Faça login para continuar aprendendo",
+    "loginSubtitleEmail": "Digite seu email para encontrar sua conta",
+    "loginFillEmail": "Por favor, insira seu email",
+    "accountNotFound": "Nenhuma conta encontrada com este email. Tente criar uma nova conta.",
+    "email": "Email",
+    "emailPlaceholder": "seu@email.com",
+    "password": "Senha",
+    "passwordPlaceholder": "Sua senha",
+    "login": "Entrar",
+    "logout": "Sair",
+    "logoutConfirmTitle": "Sair?",
+    "logoutConfirmMessage": "Tem certeza de que deseja sair?",
+    "error": "Erro de Login",
+    "fillAllFields": "Por favor, insira seu email e senha",
+    "invalidCredentials": "Email ou senha inválidos",
+    "validationError": "Verifique seus dados",
+    "serverError": "Erro no servidor. Tente novamente mais tarde",
+    "networkError": "Sem conexão. Verifique sua internet"
+  },
   "errors": {
     "loadCourse": "Falha ao carregar curso",
     "loadSection": "Falha ao carregar seção",
+    "loadCourses": "Falha ao carregar cursos",
     "generic": "Algo deu errado"
   }
 }

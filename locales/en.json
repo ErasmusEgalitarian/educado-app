@@ -99,7 +99,8 @@
     "false": "False",
     "checkAnswer": "Check Answer",
     "nextQuestion": "Next Question",
-    "viewResults": "View Results"
+    "viewResults": "View Results",
+    "noVideo": "This section has text content only. Proceed to the questions below."
   },
   "results": {
     "greatJob": "Great Job!",
@@ -116,9 +117,46 @@
     "date": "Date of Completion",
     "share": "Share Certificate"
   },
+  "auth": {
+    "welcomeTitle": "Welcome to Educado!",
+    "welcomeSubtitle": "Learn, grow and earn certificates with courses created by experts.",
+    "createAccount": "Create Account",
+    "or": "or",
+    "loginExisting": "I already have an account",
+    "registerTitle": "Create Your Account",
+    "registerSubtitle": "Fill in your name to get started. Email and phone are optional.",
+    "registerFillRequired": "First name and last name are required",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "Your first name",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Your last name",
+    "emailOptional": "Email (optional)",
+    "phoneOptional": "Phone (optional)",
+    "phonePlaceholder": "Your phone number",
+    "loginTitle": "Welcome Back",
+    "loginSubtitle": "Sign in to continue learning",
+    "loginSubtitleEmail": "Enter your email to find your account",
+    "loginFillEmail": "Please enter your email",
+    "accountNotFound": "No account found with this email. Try creating a new account.",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Your password",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "logoutConfirmTitle": "Sign Out?",
+    "logoutConfirmMessage": "Are you sure you want to sign out?",
+    "error": "Login Error",
+    "fillAllFields": "Please enter your email and password",
+    "invalidCredentials": "Invalid email or password",
+    "validationError": "Please check your input",
+    "serverError": "Server error. Please try again later",
+    "networkError": "Unable to connect. Check your internet connection"
+  },
   "errors": {
     "loadCourse": "Failed to load course",
     "loadSection": "Failed to load section",
+    "loadCourses": "Failed to load courses",
     "generic": "Something went wrong"
   }
 }

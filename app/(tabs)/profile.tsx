@@ -1,10 +1,12 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { t } from '@/i18n/config'
+import { changeLanguage, getCurrentLanguage, t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React from 'react'
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,42 +17,79 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ProfileScreen() {
   const colors = AppColors()
-  const { currentLanguage } = useLanguage()
+  const { currentLanguage, refreshLanguage } = useLanguage()
   const insets = useSafeAreaInsets()
+  const { user, logout } = useAuth()
 
-  // Mock data - replace with real data later
-  const userInitials = 'AA'
-  const userName = t('profile.avatarName')
-  const userEmail = t('profile.userEmail')
+  const firstName = user?.firstName || ''
+  const lastName = user?.lastName || ''
+  const userName = `${firstName} ${lastName}`.trim() || t('profile.avatarName')
+  const userEmail = user?.email || t('profile.userEmail')
+  const userInitials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'AA'
+
   const daysStreak = 1
   const level = 1
-  const levelProgress = 75 // percentage
+  const levelProgress = 75
 
   const handleMenuPress = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    // Navigate to respective screens
     console.log(`Navigate to: ${screen}`)
+  }
+
+  const handleToggleLanguage = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    const next = getCurrentLanguage() === 'pt-BR' ? 'en' : 'pt-BR'
+    await changeLanguage(next)
+    refreshLanguage()
+  }
+
+  const handleLogout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    Alert.alert(t('auth.logoutConfirmTitle'), t('auth.logoutConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('auth.logout'),
+        style: 'destructive',
+        onPress: async () => {
+          await logout()
+        },
+      },
+    ])
   }
 
   const menuItems = [
     {
       id: 'editProfile',
       label: t('profile.editProfile'),
-      icon: 'person-outline',
+      icon: 'person-outline' as const,
     },
     {
       id: 'certificates',
       label: t('profile.certificates'),
-      icon: 'ribbon-outline',
+      icon: 'ribbon-outline' as const,
     },
-    { id: 'ranking', label: t('profile.ranking'), icon: 'trophy-outline' },
-    { id: 'download', label: t('profile.download'), icon: 'download-outline' },
+    {
+      id: 'ranking',
+      label: t('profile.ranking'),
+      icon: 'trophy-outline' as const,
+    },
+    {
+      id: 'download',
+      label: t('profile.download'),
+      icon: 'download-outline' as const,
+    },
     {
       id: 'changePassword',
       label: t('profile.changePassword'),
-      icon: 'lock-closed-outline',
+      icon: 'lock-closed-outline' as const,
     },
   ]
+
+  const languageLabel =
+    currentLanguage === 'pt-BR' ? 'Português (BR)' : 'English'
+  const switchToLabel =
+    currentLanguage === 'pt-BR' ? 'Switch to English' : 'Mudar para Português'
 
   return (
     <View
@@ -87,7 +126,6 @@ export default function ProfileScreen() {
         <View
           style={[styles.statsCard, { backgroundColor: colors.cardBackground }]}
         >
-          {/* Streak Card */}
           <View
             style={[styles.statBadgeSingle, { backgroundColor: '#6EBE44' }]}
           >
@@ -97,7 +135,6 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          {/* Level Progress */}
           <View style={styles.levelContainer}>
             <Text style={[styles.levelText, { color: colors.textPrimary }]}>
               {t('profile.level', { level })}
@@ -115,15 +152,12 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={[
                 styles.menuItem,
-                {
-                  borderBottomWidth: index < menuItems.length - 1 ? 1 : 0,
-                  borderBottomColor: colors.border,
-                },
+                { borderBottomWidth: 1, borderBottomColor: colors.border },
               ]}
               onPress={() => handleMenuPress(item.id)}
               activeOpacity={0.7}
@@ -138,7 +172,39 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
           ))}
+
+          {/* Language option inline in the menu */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleToggleLanguage}
+            activeOpacity={0.7}
+          >
+            <View style={styles.languageRow}>
+              <Ionicons
+                name="globe-outline"
+                size={20}
+                color={colors.textPrimary}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                {languageLabel}
+              </Text>
+            </View>
+            <Text style={[styles.languageSwitchText, { color: colors.primary }]}>
+              {switchToLabel}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+          <Text style={styles.logoutText}>{t('auth.logout')}</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   )
@@ -236,6 +302,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
+    marginBottom: 24,
   },
   menuItem: {
     flexDirection: 'row',
@@ -247,5 +314,25 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  languageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageSwitchText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+  },
+  logoutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

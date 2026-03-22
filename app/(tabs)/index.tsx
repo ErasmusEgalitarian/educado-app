@@ -1,15 +1,16 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course, mockCourses } from '@/data/mock-data'
+import { Course } from '@/data/mock-data'
+import { useAllCourses } from '@/hooks/useCourses'
+import { useEnrollments } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { getEnrolledCourses } from '@/utils/enrollment-storage'
-import { getCourseCompletionPercentage } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,59 +22,73 @@ export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
   const { currentLanguage } = useLanguage()
-  const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
-    {}
-  )
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([])
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const {
+    data: allCourses = [],
+    isLoading: coursesLoading,
+    refetch: refetchCourses,
+  } = useAllCourses()
+  const {
+    data: enrollments = [],
+    isLoading: progressLoading,
+    refetch: refetchEnrollments,
+  } = useEnrollments()
 
-  // Reload enrolled courses when screen comes into focus
+  // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadData()
-    }, [])
+      refetchCourses()
+      refetchEnrollments()
+    }, [refetchCourses, refetchEnrollments])
   )
 
-  const loadData = async () => {
-    // Load enrolled course IDs
-    const enrolledIds = await getEnrolledCourses()
-
-    // Filter courses to only show enrolled ones
-    const enrolled = mockCourses.filter((course) =>
-      enrolledIds.includes(course.id)
+  // Compute enrolled courses and progress from enrollments
+  const { enrolledCourses, courseProgress } = useMemo(() => {
+    const activeEnrollments = enrollments.filter(
+      (e) => e.status === 'ACTIVE' || e.status === 'COMPLETED'
     )
-    setEnrolledCourses(enrolled)
+    const enrolledCourseIds = activeEnrollments.map((e) => e.courseId)
+    const enrolled = allCourses.filter((c) => enrolledCourseIds.includes(c.id))
 
-    // Load progress for enrolled courses
     const progress: Record<string, number> = {}
-    for (const course of enrolled) {
-      const percentage = await getCourseCompletionPercentage(
-        course.id,
-        course.sections.length
-      )
-      progress[course.id] = percentage
+    for (const e of activeEnrollments) {
+      progress[e.courseId] = e.progressPercent
     }
-    setCourseProgress(progress)
-  }
+
+    return { enrolledCourses: enrolled, courseProgress: progress }
+  }, [allCourses, enrollments])
 
   const handleCoursePress = (courseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     router.push(`/(tabs)/courses/${courseId}`)
   }
 
-  // Calculate total sections completed and total sections for enrolled courses
+  // Calculate total progress
   const getTotalProgress = () => {
     let completedSections = 0
     let totalSections = 0
-    enrolledCourses.forEach((course) => {
+    enrolledCourses.forEach((course: Course) => {
       totalSections += course.sections.length
       const progress = courseProgress[course.id] || 0
       completedSections += Math.round((progress / 100) * course.sections.length)
     })
     return { completedSections, totalSections }
+  }
+
+  const isLoading = coursesLoading || progressLoading
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
   }
 
   const { completedSections, totalSections } = getTotalProgress()
@@ -197,7 +212,7 @@ export default function CoursesScreen() {
         </View>
 
         {/* Course Cards */}
-        {enrolledCourses.map((course) => {
+        {enrolledCourses.map((course: Course) => {
           const progress = courseProgress[course.id] || 0
           const completedCount = Math.round(
             (progress / 100) * course.sections.length
@@ -299,6 +314,10 @@ export default function CoursesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     paddingTop: 60,

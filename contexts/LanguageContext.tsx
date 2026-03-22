@@ -14,7 +14,7 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  currentLanguage: 'en',
+  currentLanguage: 'pt-BR',
   languageVersion: 0,
   refreshLanguage: () => {},
 })
