@@ -1,23 +1,17 @@
 import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { getCourseById } from '@/data/mock-data'
+import { useCourse } from '@/hooks/useCourses'
+import { useEnrollmentDetail } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { getCourseImage } from '@/utils/image-loader'
-import { unenrollFromCourse } from '@/utils/enrollment-storage'
-import {
-  getCourseCompletionPercentage,
-  getCourseProgress,
-  getFirstIncompleteSectionId,
-  isSectionCompleted,
-} from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -34,88 +28,85 @@ export default function CourseDetailScreen() {
   const insets = useSafeAreaInsets()
   const { currentLanguage } = useLanguage()
 
-  const course = getCourseById(courseId)
-  const [completedSections, setCompletedSections] = useState<Set<string>>(
-    new Set()
-  )
-  const [completionPercentage, setCompletionPercentage] = useState(0)
-  const [sectionScores, setSectionScores] = useState<
-    Map<string, { score: number; totalQuestions: number }>
-  >(new Map())
-
-  const loadProgress = useCallback(async () => {
-    if (!course) return
-
-    const courseProgress = await getCourseProgress(courseId)
-    const completed = new Set(
-      courseProgress.sections.filter((s) => s.completed).map((s) => s.sectionId)
-    )
-    setCompletedSections(completed)
-
-    // Build section scores map
-    const scores = new Map<string, { score: number; totalQuestions: number }>()
-    courseProgress.sections.forEach((section) => {
-      if (section.completed) {
-        scores.set(section.sectionId, {
-          score: section.score,
-          totalQuestions: section.totalQuestions,
-        })
+  const {
+    data: course,
+    isLoading: courseLoading,
+    refetch: refetchCourse,
+  } = useCourse(courseId)
+  const { data: enrollmentDetail, refetch: refetchProgress } =
+    useEnrollmentDetail(courseId)
+  const progress = enrollmentDetail
+    ? {
+        sectionProgresses: enrollmentDetail.sections.map((s) => ({
+          sectionId: s.id,
+          completedAt: s.status === 'completed' ? new Date().toISOString() : null,
+          id: s.id,
+          courseProgressId: '',
+        })),
       }
-    })
-    setSectionScores(scores)
-
-    // Get completion percentage
-    const percentage = await getCourseCompletionPercentage(
-      courseId,
-      course.sections.length
-    )
-    setCompletionPercentage(percentage)
-  }, [course, courseId])
-
-  // Load progress on initial mount
-  useEffect(() => {
-    if (course) {
-      loadProgress()
-    }
-  }, [course, loadProgress])
+    : undefined
 
   // Reload progress when screen comes back into focus
   useFocusEffect(
     useCallback(() => {
-      if (course) {
-        loadProgress()
-      }
-    }, [course, loadProgress])
+      refetchCourse()
+      refetchProgress()
+    }, [refetchCourse, refetchProgress])
   )
 
-  const handleStartCourse = async () => {
+  // Compute completion state from API progress
+  const { completedSections, sectionScores, completionPercentage } =
+    useMemo(() => {
+      const completed = new Set<string>()
+      const scores = new Map<
+        string,
+        { score: number; totalQuestions: number }
+      >()
+
+      if (progress?.sectionProgresses) {
+        for (const sp of progress.sectionProgresses) {
+          if (sp.completedAt) {
+            completed.add(sp.sectionId)
+          }
+        }
+      }
+
+      // Calculate score from local storage if available (API doesn't store scores)
+      // For now, completed sections show as completed without score detail
+      const totalSections = course?.sections.length || 0
+      const percentage =
+        totalSections > 0
+          ? Math.round((completed.size / totalSections) * 100)
+          : 0
+
+      return {
+        completedSections: completed,
+        sectionScores: scores,
+        completionPercentage: percentage,
+      }
+    }, [progress, course])
+
+  const handleStartCourse = () => {
     if (!course) return
 
-    const firstIncompleteId = await getFirstIncompleteSectionId(
-      courseId,
-      course.sections.map((s) => s.id)
+    // Find first incomplete section
+    const firstIncomplete = course.sections.find(
+      (s) => !completedSections.has(s.id)
     )
-
-    router.push(`/(tabs)/courses/${courseId}/section/${firstIncompleteId}`)
+    const targetSection = firstIncomplete || course.sections[0]
+    if (targetSection) {
+      router.push(`/(tabs)/courses/${courseId}/section/${targetSection.id}`)
+    }
   }
 
-  const handleSectionPress = async (
-    sectionId: string,
-    sectionIndex: number
-  ) => {
+  const handleSectionPress = (sectionId: string, sectionIndex: number) => {
     if (!course) return
 
     // Check if previous sections are completed (unless it's the first section)
     if (sectionIndex > 0) {
       const previousSectionId = course.sections[sectionIndex - 1].id
-      const isPreviousCompleted = await isSectionCompleted(
-        courseId,
-        previousSectionId
-      )
-
-      if (!isPreviousCompleted) {
-        // Section is locked
-        return
+      if (!completedSections.has(previousSectionId)) {
+        return // Section is locked
       }
     }
 
@@ -124,8 +115,7 @@ export default function CourseDetailScreen() {
 
   const isSectionLocked = (sectionIndex: number): boolean => {
     if (sectionIndex === 0) return false
-
-    const previousSectionId = course?.sections[sectionIndex - 1].id
+    const previousSectionId = course?.sections[sectionIndex - 1]?.id
     return previousSectionId ? !completedSections.has(previousSectionId) : false
   }
 
@@ -142,13 +132,26 @@ export default function CourseDetailScreen() {
         {
           text: t('course.unenrollConfirm'),
           style: 'destructive',
-          onPress: async () => {
-            await unenrollFromCourse(courseId)
+          onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             router.back()
           },
         },
       ]
+    )
+  }
+
+  if (courseLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
     )
   }
 
@@ -169,13 +172,15 @@ export default function CourseDetailScreen() {
 
   const isStarted = completedSections.size > 0
 
+  // Course image: use API URL if it starts with http, otherwise use local image loader
+  const courseImageSource = course.imageUrl.startsWith('http')
+    ? { uri: course.imageUrl }
+    : require('@/assets/images/logo_black240.png')
+
   return (
     <View
       key={currentLanguage}
-      style={[
-        styles.container,
-        { backgroundColor: colors.backgroundPrimary },
-      ]}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       <ScrollView
         style={styles.scrollView}
@@ -188,7 +193,7 @@ export default function CourseDetailScreen() {
         {/* Hero Image with Back Button */}
         <View style={styles.heroImageContainer}>
           <Image
-            source={getCourseImage(course.imageUrl)}
+            source={courseImageSource}
             style={styles.heroImage}
             contentFit="cover"
           />
@@ -208,7 +213,10 @@ export default function CourseDetailScreen() {
 
         {/* Course Card */}
         <View
-          style={[styles.courseCard, { backgroundColor: colors.cardBackground }]}
+          style={[
+            styles.courseCard,
+            { backgroundColor: colors.cardBackground },
+          ]}
         >
           {/* Course Title */}
           <View style={styles.courseTitleRow}>
@@ -241,7 +249,9 @@ export default function CourseDetailScreen() {
             <View style={styles.statItem}>
               <Ionicons name="flash" size={16} color="#FCD34D" />
               <Text style={[styles.statText, { color: colors.textPrimary }]}>
-                {t('course.percentCompleted', { percent: completionPercentage })}
+                {t('course.percentCompleted', {
+                  percent: completionPercentage,
+                })}
               </Text>
             </View>
           </View>
@@ -297,6 +307,10 @@ export default function CourseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

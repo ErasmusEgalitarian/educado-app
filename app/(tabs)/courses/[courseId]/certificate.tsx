@@ -1,14 +1,16 @@
 import Certificate from '@/components/Certificate/Certificate'
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { getCourseById } from '@/data/mock-data'
+import { useCourse } from '@/hooks/useCourses'
+import { apiCreateCertificate } from '@/services/api'
 import { t } from '@/i18n/config'
 import {
   getCertificate,
   getCourseProgress,
   hasPassedCourse,
-  saveCertificate,
+  saveCertificate as saveLocalCertificate,
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import * as MediaLibrary from 'expo-media-library'
@@ -30,9 +32,13 @@ export default function CertificateScreen() {
   const colors = AppColors()
   const certificateRef = useRef<View>(null)
   const { currentLanguage } = useLanguage()
+  const { user } = useAuth()
+  // Certificate is auto-created by backend on course completion
 
-  const course = getCourseById(courseId)
-  const [userName, setUserName] = useState('Learner')
+  const { data: course } = useCourse(courseId)
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Learner'
+
+  const [userName, setUserName] = useState(displayName)
   const [completionDate, setCompletionDate] = useState(new Date().toISOString())
   const [isDownloading, setIsDownloading] = useState(false)
 
@@ -47,7 +53,6 @@ export default function CertificateScreen() {
     )
 
     if (!passed) {
-      // User hasn't passed, redirect back to course
       Alert.alert(
         'Certificate Not Available',
         `You need to score at least ${course.passingThreshold}% to earn a certificate.`,
@@ -68,18 +73,26 @@ export default function CertificateScreen() {
       setUserName(existingCertificate.userName)
       setCompletionDate(existingCertificate.completedAt)
     } else if (courseProgress.completedAt) {
-      // Create new certificate
+      const name = displayName
       const newCertificate = {
         courseId,
-        courseName: course!.title,
+        courseName: course.title,
         completedAt: courseProgress.completedAt,
-        userName: 'Learner',
-        totalSections: course!.sections.length,
+        userName: name,
+        totalSections: course.sections.length,
       }
-      await saveCertificate(newCertificate)
+      await saveLocalCertificate(newCertificate)
+      setUserName(name)
       setCompletionDate(courseProgress.completedAt)
+
+      // Sync certificate to API (legacy endpoint for backwards compat)
+      try {
+        await apiCreateCertificate(newCertificate)
+      } catch {
+        // Continue even if API call fails — backend may already have it
+      }
     }
-  }, [course, courseId, router])
+  }, [course, courseId, router, displayName])
 
   useEffect(() => {
     if (course) {
@@ -91,7 +104,6 @@ export default function CertificateScreen() {
     try {
       setIsDownloading(true)
 
-      // Request permissions
       const { status } = await MediaLibrary.requestPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
@@ -102,17 +114,14 @@ export default function CertificateScreen() {
         return
       }
 
-      // Wait a moment to ensure view is fully rendered
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Capture the certificate as image
       if (certificateRef.current) {
         const uri = await captureRef(certificateRef.current, {
           format: 'png',
           quality: 1,
         })
 
-        // Save to media library
         await MediaLibrary.createAssetAsync(uri)
 
         Alert.alert('Success!', 'Certificate saved to your photo gallery.', [

@@ -1,16 +1,18 @@
 import CourseDetailsBottomSheet from '@/components/Explore/CourseDetailsBottomSheet'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course, mockCourses } from '@/data/mock-data'
+import { Course } from '@/data/mock-data'
+import { useAllCourses } from '@/hooks/useCourses'
+import { useEnrollments, useEnroll } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { enrollInCourse, isEnrolledInCourse } from '@/utils/enrollment-storage'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,9 +28,14 @@ export default function ExploreScreen() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [enrolledCourses, setEnrolledCourses] = useState<string[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const bottomSheetRef = useRef<BottomSheet>(null)
+
+  const { data: courses = [], isLoading, error } = useAllCourses()
+  const { data: enrollments = [] } = useEnrollments()
+  const enrollMutation = useEnroll()
+
+  const enrolledCourseIds = enrollments.map((e) => e.courseId)
 
   const categories = [
     { id: 'all', label: t('explore.all') },
@@ -37,21 +44,6 @@ export default function ExploreScreen() {
     { id: 'history', label: t('explore.history') },
     { id: 'science', label: t('explore.science') },
   ]
-
-  useEffect(() => {
-    loadEnrollments()
-  }, [])
-
-  const loadEnrollments = async () => {
-    const enrolled: string[] = []
-    for (const course of mockCourses) {
-      const isEnrolled = await isEnrolledInCourse(course.id)
-      if (isEnrolled) {
-        enrolled.push(course.id)
-      }
-    }
-    setEnrolledCourses(enrolled)
-  }
 
   const handleCategoryPress = (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -68,10 +60,12 @@ export default function ExploreScreen() {
     if (!selectedCourse) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-    await enrollInCourse(selectedCourse.id)
-    setEnrolledCourses([...enrolledCourses, selectedCourse.id])
+    try {
+      await enrollMutation.mutateAsync(selectedCourse.id)
+    } catch {
+      // Even if the API call fails, navigate to the course
+    }
 
-    // Close bottom sheet and navigate to course
     bottomSheetRef.current?.close()
     router.push(`/(tabs)/courses/${selectedCourse.id}`)
   }
@@ -84,7 +78,7 @@ export default function ExploreScreen() {
     router.push(`/(tabs)/courses/${selectedCourse.id}`)
   }
 
-  const filteredCourses = mockCourses.filter((course) => {
+  const filteredCourses = courses.filter((course) => {
     const matchesSearch = course.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
@@ -92,6 +86,46 @@ export default function ExploreScreen() {
       selectedCategory === 'all' || course.category === selectedCategory
     return matchesSearch && matchesCategory
   })
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <Ionicons
+          name="cloud-offline-outline"
+          size={64}
+          color={colors.textSecondary}
+        />
+        <Text
+          style={[
+            styles.errorText,
+            { color: colors.textPrimary, marginTop: 16 },
+          ]}
+        >
+          {t('errors.loadCourses')}
+        </Text>
+      </View>
+    )
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -265,7 +299,9 @@ export default function ExploreScreen() {
           ref={bottomSheetRef}
           course={selectedCourse}
           isEnrolled={
-            selectedCourse ? enrolledCourses.includes(selectedCourse.id) : false
+            selectedCourse
+              ? enrolledCourseIds.includes(selectedCourse.id)
+              : false
           }
           onEnroll={handleEnroll}
           onViewCourse={handleViewCourse}
@@ -278,6 +314,14 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

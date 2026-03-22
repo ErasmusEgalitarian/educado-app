@@ -2,17 +2,21 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import QuestionCard from '@/components/Section/QuestionCard'
 import VideoPlayer from '@/components/Section/VideoPlayer'
 import { AppColors } from '@/constants/theme/AppColors'
-import { getCourseById, getNextSection, getSectionById } from '@/data/mock-data'
+import { useCourse } from '@/hooks/useCourses'
+import {
+  useCompleteCourse,
+  useSaveSectionProgress,
+} from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import {
-  hasPassedCourse,
-  isCourseCompleted,
-  markCourseCompleted,
-  saveSectionProgress,
+  getCourseScorePercentage,
+  saveSectionProgress as saveLocalSectionProgress,
+  isCourseCompleted as checkLocalCourseCompleted,
+  markCourseCompleted as markLocalCourseCompleted,
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -33,8 +37,22 @@ export default function SectionScreen() {
   const colors = AppColors()
   const insets = useSafeAreaInsets()
 
-  const course = getCourseById(courseId)
-  const section = getSectionById(courseId, sectionId)
+  const { data: course } = useCourse(courseId)
+  const saveSectionProgressMutation = useSaveSectionProgress()
+  const markCourseCompletedMutation = useCompleteCourse()
+
+  const section = useMemo(() => {
+    return course?.sections.find((s) => s.id === sectionId)
+  }, [course, sectionId])
+
+  const nextSection = useMemo(() => {
+    if (!course || !sectionId) return null
+    const currentIndex = course.sections.findIndex((s) => s.id === sectionId)
+    if (currentIndex === -1 || currentIndex === course.sections.length - 1) {
+      return null
+    }
+    return course.sections[currentIndex + 1]
+  }, [course, sectionId])
 
   const [phase, setPhase] = useState<Phase>('video')
   const [videoWatchPercentage, setVideoWatchPercentage] = useState(0)
@@ -43,7 +61,7 @@ export default function SectionScreen() {
     Array<{ isCorrect: boolean; answer: number | boolean }>
   >([])
 
-  // Reset all state when sectionId changes (navigating to a new section)
+  // Reset all state when sectionId changes
   useEffect(() => {
     setPhase('video')
     setVideoWatchPercentage(0)
@@ -78,13 +96,11 @@ export default function SectionScreen() {
     const newAnswers = [...answers, { isCorrect, answer }]
     setAnswers(newAnswers)
 
-    // Move to next question or show results
     if (currentQuestionIndex < section.questions.length - 1) {
       setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
       }, 1500)
     } else {
-      // All questions answered, show results
       setTimeout(() => {
         setPhase('results')
       }, 1500)
@@ -95,43 +111,53 @@ export default function SectionScreen() {
     const correctAnswers = answers.filter((a) => a.isCorrect).length
     const totalQuestions = section.questions.length
 
-    // Save progress
-    await saveSectionProgress(
+    // Save progress locally (for score tracking)
+    await saveLocalSectionProgress(
       courseId,
       sectionId,
       correctAnswers,
       totalQuestions
     )
 
-    // Check if all sections are completed
-    const nextSection = getNextSection(courseId, sectionId)
-    const courseCompleted = await isCourseCompleted(
+    // Save progress to API (completion only)
+    try {
+      await saveSectionProgressMutation.mutateAsync({
+        courseId,
+        sectionId,
+        score: correctAnswers,
+        totalQuestions: totalQuestions,
+      })
+    } catch {
+      // Continue even if API save fails
+    }
+
+    // Check if course is completed
+    const courseCompleted = await checkLocalCourseCompleted(
       courseId,
       course.sections.length
     )
 
     if (courseCompleted) {
-      // Check if user has passed based on score threshold
-      const passed = await hasPassedCourse(
-        courseId,
-        course.sections.length,
-        course.passingThreshold
-      )
+      const scorePercentage = await getCourseScorePercentage(courseId)
+      const passed = scorePercentage >= course.passingThreshold
 
-      await markCourseCompleted(courseId)
+      await markLocalCourseCompleted(courseId)
+
+      // Sync completion to API
+      try {
+        await markCourseCompletedMutation.mutateAsync(courseId)
+      } catch {
+        // Continue even if API call fails
+      }
 
       if (passed) {
-        // User passed - show certificate
         router.replace(`/(tabs)/courses/${courseId}/certificate`)
       } else {
-        // User completed but didn't pass - go back to course details
         router.replace(`/(tabs)/courses/${courseId}`)
       }
     } else if (nextSection) {
-      // Go to next section
       router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
     } else {
-      // Go back to course details
       router.replace(`/(tabs)/courses/${courseId}`)
     }
   }
