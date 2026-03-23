@@ -1,8 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
+  getSecureToken,
+  setSecureToken,
+  removeSecureToken,
+} from './secure-storage'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL
 
-const TOKEN_KEY = '@educado:token'
 const USER_KEY = '@educado:user'
 const DEVICE_ID_KEY = '@educado:deviceId'
 
@@ -263,15 +267,15 @@ export interface ApiAnswerResult {
 // ============================================================
 
 export const getStoredToken = async (): Promise<string | null> => {
-  return AsyncStorage.getItem(TOKEN_KEY)
+  return getSecureToken()
 }
 
 export const storeToken = async (token: string): Promise<void> => {
-  await AsyncStorage.setItem(TOKEN_KEY, token)
+  await setSecureToken(token)
 }
 
 export const removeToken = async (): Promise<void> => {
-  await AsyncStorage.removeItem(TOKEN_KEY)
+  await removeSecureToken()
 }
 
 export const getStoredUser = async (): Promise<ApiUser | null> => {
@@ -380,17 +384,22 @@ export const apiUploadImage = async (
 // Media URL builders
 // ============================================================
 
-export const getImageUrl = (mediaId: string, token?: string): string => {
-  const url = `${API_URL}/media/${mediaId}/stream`
-  return token ? `${url}?token=${token}` : url
+/**
+ * Build Authorization headers for authenticated media requests.
+ * Use with expo-image source.headers, expo-video, or fetch.
+ */
+export const getAuthHeaders = (
+  token: string | null | undefined
+): Record<string, string> => {
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-export const getVideoStreamUrl = (
-  mediaId: string,
-  token?: string
-): string => {
-  const url = `${API_URL}/media/${mediaId}/stream`
-  return token ? `${url}?token=${token}` : url
+export const getImageUrl = (mediaId: string): string => {
+  return `${API_URL}/media/${mediaId}/stream`
+}
+
+export const getVideoStreamUrl = (mediaId: string): string => {
+  return `${API_URL}/media/${mediaId}/stream`
 }
 
 // ============================================================
@@ -746,6 +755,14 @@ export const apiGetCourseLeaderboard = (
 // Reviews endpoints
 // ============================================================
 
+export const apiCheckReviewed = (
+  courseId: string
+): Promise<{ hasReviewed: boolean }> => {
+  return apiFetch<{ hasReviewed: boolean }>(
+    `/student/reviews/check/${courseId}`
+  )
+}
+
 export const apiSubmitReview = (data: {
   courseId: string
   rating: number
@@ -785,12 +802,8 @@ export const apiGetStudentCertificates = (): Promise<{
   )
 }
 
-export const getStudentCertificatePdfUrl = (
-  certId: string,
-  token?: string
-): string => {
-  const url = `${API_URL}/student/certificates/${certId}/pdf`
-  return token ? `${url}?token=${token}` : url
+export const getStudentCertificatePdfUrl = (certId: string): string => {
+  return `${API_URL}/student/certificates/${certId}/pdf`
 }
 
 export const apiVerifyCertificate = (

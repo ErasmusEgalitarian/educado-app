@@ -108,8 +108,9 @@
     "percentCompleted": "{{percent}}% completed",
     "unenrollCourse": "Unenroll from course",
     "unenrollConfirmTitle": "Unenroll from Course?",
-    "unenrollConfirmMessage": "Are you sure you want to unenroll from this course? Your progress will be saved.",
+    "unenrollConfirmMessage": "Are you sure you want to unenroll from this course? Your progress and certificates will be removed.",
     "unenrollConfirm": "Unenroll",
+    "unenrollError": "Failed to unenroll. Please try again.",
     "cancel": "Cancel"
   },
   "section": {
@@ -120,7 +121,15 @@
     "checkAnswer": "Check Answer",
     "nextQuestion": "Next Question",
     "viewResults": "View Results",
-    "noVideo": "This section has text content only. Proceed to the questions below."
+    "noVideo": "This section has text content only. Proceed to the questions below.",
+    "videoDescription": "Watch the video to learn about this topic. You'll need to watch at least 80% before answering questions.",
+    "questionsToAnswer": "{{count}} questions to answer after video",
+    "watchMore": "Watch {{percent}}% more to continue",
+    "questionNumber": "Question {{index}}",
+    "answeredCorrectly": "You answered {{correct}} out of {{total}} questions correctly",
+    "courseName": "Course: {{name}}",
+    "completeAndContinue": "Complete and Continue",
+    "readAllPages": "Read all pages to continue"
   },
   "results": {
     "greatJob": "Great Job!",

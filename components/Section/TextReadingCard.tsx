@@ -1,4 +1,5 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
@@ -56,7 +57,7 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.courseTitle, { color: colors.textSecondary }]}>
-            Nome do Curso: {courseTitle}
+            {t('section.courseName', { name: courseTitle })}
           </Text>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             {sectionTitle}
@@ -129,7 +130,7 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
       {/* Complete Button */}
       <View style={styles.buttonContainer}>
         <ButtonPrimary
-          title="Concluir e Continuar"
+          title={t('section.completeAndContinue')}
           onPress={handleComplete}
           icon="checkmark"
           fullWidth
@@ -137,7 +138,7 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
         />
         {!allPagesViewed && (
           <Text style={[styles.hint, { color: colors.textSecondary }]}>
-            Leia todas as páginas para continuar
+            {t('section.readAllPages')}
           </Text>
         )}
       </View>

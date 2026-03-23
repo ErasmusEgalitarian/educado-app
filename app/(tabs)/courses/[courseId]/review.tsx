@@ -2,12 +2,12 @@ import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCourse } from '@/hooks/useCourses'
-import { useSubmitReview } from '@/hooks/useReviews'
+import { useHasReviewed, useSubmitReview } from '@/hooks/useReviews'
 import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
@@ -31,10 +31,18 @@ export default function ReviewScreen() {
   const { currentLanguage } = useLanguage()
 
   const { data: course } = useCourse(courseId)
+  const { data: hasReviewed } = useHasReviewed(courseId)
   const submitReviewMutation = useSubmitReview()
 
+  // Skip review screen if already reviewed
+  useEffect(() => {
+    if (hasReviewed === true) {
+      router.replace(`/(tabs)/courses/${courseId}/certificate`)
+    }
+  }, [hasReviewed, courseId, router])
+
   const [rating, setRating] = useState(0)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedTagKeys, setSelectedTagKeys] = useState<string[]>([])
   const [comment, setComment] = useState('')
 
   const handleStarPress = (star: number) => {
@@ -42,10 +50,10 @@ export default function ReviewScreen() {
     setRating(star)
   }
 
-  const handleTagPress = (tag: string) => {
+  const handleTagPress = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag].slice(0, 5)
+    setSelectedTagKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key].slice(0, 5)
     )
   }
 
@@ -57,7 +65,7 @@ export default function ReviewScreen() {
       await submitReviewMutation.mutateAsync({
         courseId,
         rating,
-        tags: selectedTags,
+        tags: selectedTagKeys,
         comment: comment.trim() || null,
       })
       router.replace(`/(tabs)/courses/${courseId}/certificate`)
@@ -135,7 +143,7 @@ export default function ReviewScreen() {
         <View style={styles.tagsContainer}>
           {TAG_KEYS.map((key) => {
             const label = t(`review.${key}`)
-            const isSelected = selectedTags.includes(label)
+            const isSelected = selectedTagKeys.includes(key)
             return (
               <TouchableOpacity
                 key={key}
@@ -146,7 +154,7 @@ export default function ReviewScreen() {
                     borderColor: isSelected ? colors.primary : '#D1D5DB',
                   },
                 ]}
-                onPress={() => handleTagPress(label)}
+                onPress={() => handleTagPress(key)}
                 activeOpacity={0.7}
               >
                 <Text
