@@ -6,6 +6,7 @@ import {
   apiStudentRegister,
   apiStudentDeviceLogin,
   apiStudentEmailLogin,
+  apiGetStudentProfile,
   getOrCreateDeviceId,
   getStoredToken,
   getStoredUser,
@@ -14,6 +15,8 @@ import {
   storeToken,
   storeUser,
 } from '@/services/api'
+import { deleteAllDownloads } from '@/services/download-manager'
+import { clearAllProgress } from '@/utils/progress-storage'
 import React, {
   createContext,
   ReactNode,
@@ -41,6 +44,7 @@ interface AuthContextType extends AuthState {
     dateOfBirth?: string
   }) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -86,7 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
                   lastName: result.user.lastName,
                   email: user.email || '',
                   username: null,
-                  avatarMediaId: null,
+                  avatarMediaId: user.avatarMediaId ?? null,
                 }
                 await storeToken(result.accessToken)
                 await storeUser(freshUser)
@@ -159,16 +163,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const loginByEmail = useCallback(async (email: string) => {
     const response = await apiStudentEmailLogin(email)
 
+    await storeToken(response.accessToken)
+
+    // Fetch full profile to get avatarMediaId
+    let avatarMediaId: string | null = null
+    try {
+      const profile = await apiGetStudentProfile()
+      avatarMediaId = profile.avatarMediaId
+    } catch {
+      // Continue without avatar
+    }
+
     const user: ApiUser = {
       id: response.user.id,
       firstName: response.user.firstName,
       lastName: response.user.lastName,
       email,
       username: null,
-      avatarMediaId: null,
+      avatarMediaId,
     }
 
-    await storeToken(response.accessToken)
     await storeUser(user)
 
     setState({
@@ -216,6 +230,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = useCallback(async () => {
     await removeToken()
     await removeUser()
+    await clearAllProgress()
+    await deleteAllDownloads()
     setState({
       user: null,
       token: null,
@@ -224,9 +240,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     })
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const storedUser = await getStoredUser()
+    if (storedUser) {
+      setState((prev) => ({ ...prev, user: storedUser }))
+    }
+  }, [])
+
   return (
     <AuthContext.Provider
-      value={{ ...state, login, loginByEmail, registerStudent, logout }}
+      value={{ ...state, login, loginByEmail, registerStudent, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

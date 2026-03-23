@@ -9,7 +9,6 @@ import {
 } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import {
-  getCourseScorePercentage,
   saveSectionProgress as saveLocalSectionProgress,
   isCourseCompleted as checkLocalCourseCompleted,
   markCourseCompleted as markLocalCourseCompleted,
@@ -89,6 +88,11 @@ export default function SectionScreen() {
   }
 
   const handleReadyToAnswer = () => {
+    if (section.questions.length === 0) {
+      // No questions — skip to completion
+      setPhase('results')
+      return
+    }
     setPhase('questions')
   }
 
@@ -138,22 +142,21 @@ export default function SectionScreen() {
     )
 
     if (courseCompleted) {
-      const scorePercentage = await getCourseScorePercentage(courseId)
-      const passed = scorePercentage >= course.passingThreshold
-
       await markLocalCourseCompleted(courseId)
 
       // Sync completion to API
+      let isOnline = true
       try {
         await markCourseCompletedMutation.mutateAsync(courseId)
       } catch {
-        // Continue even if API call fails
+        isOnline = false
       }
 
-      if (passed) {
-        router.replace(`/(tabs)/courses/${courseId}/certificate`)
+      // Skip review when offline — go straight to certificate
+      if (isOnline) {
+        router.replace(`/(tabs)/courses/${courseId}/review`)
       } else {
-        router.replace(`/(tabs)/courses/${courseId}`)
+        router.replace(`/(tabs)/courses/${courseId}/certificate`)
       }
     } else if (nextSection) {
       router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
@@ -163,9 +166,10 @@ export default function SectionScreen() {
   }
 
   const correctAnswersCount = answers.filter((a) => a.isCorrect).length
-  const scorePercentage = Math.round(
-    (correctAnswersCount / section.questions.length) * 100
-  )
+  const scorePercentage =
+    section.questions.length > 0
+      ? Math.round((correctAnswersCount / section.questions.length) * 100)
+      : 100
 
   return (
     <View

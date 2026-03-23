@@ -50,6 +50,30 @@ const TabsLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="certificates"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="ranking"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="downloads"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="courses/[courseId]"
         options={{
           href: null,
@@ -57,6 +81,13 @@ const TabsLayout = () => {
       />
       <Tabs.Screen
         name="courses/[courseId]/section/[sectionId]"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="courses/[courseId]/review"
         options={{
           href: null,
           tabBarStyle: { display: 'none' },

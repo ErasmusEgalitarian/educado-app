@@ -2,6 +2,7 @@ import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCourse } from '@/hooks/useCourses'
+import { useDownloadCourse, useIsDownloaded, useDeleteDownload } from '@/hooks/useDownloads'
 import { useEnrollmentDetail } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
@@ -35,6 +36,10 @@ export default function CourseDetailScreen() {
   } = useCourse(courseId)
   const { data: enrollmentDetail, refetch: refetchProgress } =
     useEnrollmentDetail(courseId)
+  const { data: downloadManifest } = useIsDownloaded(courseId)
+  const downloadMutation = useDownloadCourse()
+  const deleteMutation = useDeleteDownload()
+  const isCourseDownloaded = downloadManifest?.status === 'complete'
   const progress = enrollmentDetail
     ? {
         sectionProgresses: enrollmentDetail.sections.map((s) => ({
@@ -223,12 +228,47 @@ export default function CourseDetailScreen() {
             <Text style={[styles.courseTitle, { color: colors.textPrimary }]}>
               {course.title}
             </Text>
-            <TouchableOpacity style={styles.downloadButton}>
-              <Ionicons
-                name="download-outline"
-                size={24}
-                color={colors.primary}
-              />
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                if (isCourseDownloaded) {
+                  Alert.alert(
+                    t('downloads.downloadComplete'),
+                    course.title,
+                    [
+                      { text: t('common.ok'), style: 'cancel' },
+                      {
+                        text: t('downloads.deleteDownload'),
+                        style: 'destructive',
+                        onPress: () => deleteMutation.mutate(courseId),
+                      },
+                    ]
+                  )
+                } else if (!downloadMutation.isPending) {
+                  Alert.alert(
+                    t('downloads.downloadCourse'),
+                    course.title,
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('common.ok'),
+                        onPress: () => downloadMutation.mutate(courseId),
+                      },
+                    ]
+                  )
+                }
+              }}
+            >
+              {downloadMutation.isPending ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons
+                  name={isCourseDownloaded ? 'checkmark-circle' : 'download-outline'}
+                  size={24}
+                  color={isCourseDownloaded ? '#22C55E' : colors.primary}
+                />
+              )}
             </TouchableOpacity>
           </View>
 

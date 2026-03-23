@@ -343,6 +343,40 @@ export class ApiError extends Error {
 }
 
 // ============================================================
+// Media upload
+// ============================================================
+
+export const apiUploadImage = async (
+  uri: string,
+  filename: string
+): Promise<{ id: string }> => {
+  const token = await getStoredToken()
+  const formData = new FormData()
+
+  formData.append('file', {
+    uri,
+    name: filename,
+    type: 'image/jpeg',
+  } as unknown as Blob)
+
+  const response = await fetch(`${API_URL}/media/images`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    throw new ApiError(response.status, errorBody)
+  }
+
+  const data = await response.json()
+  return { id: data.id ?? data._id ?? data.gridFsId }
+}
+
+// ============================================================
 // Media URL builders
 // ============================================================
 
@@ -464,6 +498,7 @@ export const apiUpdateStudentProfile = (data: {
   email?: string
   phone?: string
   dateOfBirth?: string
+  avatarMediaId?: string | null
 }): Promise<ApiStudentProfile> => {
   return apiFetch<ApiStudentProfile>('/student/profile', {
     method: 'PUT',
