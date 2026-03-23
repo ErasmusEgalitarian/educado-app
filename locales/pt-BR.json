@@ -18,14 +18,6 @@
   "landing": {
     "title": "Bem-vindo"
   },
-  "login": {
-    "title": "Bem-vindo ao Educado",
-    "subtitle": "Digite seu nome de usuário para começar",
-    "usernamePlaceholder": "Digite o nome de usuário",
-    "loginButton": "Continuar",
-    "usernameError": "O nome de usuário deve ter 3-20 caracteres e conter apenas letras, números e underscores",
-    "loginError": "Falha ao fazer login. Tente novamente."
-  },
   "tabs": {
     "courses": "Cursos",
     "explore": "Explorar",
@@ -41,9 +33,7 @@
     "subject": "Matemática",
     "noCourses": "Nenhum Curso Inscrito Ainda",
     "exploreToEnroll": "Visite a aba Explorar para descobrir e se inscrever em cursos",
-    "exploreCourses": "Explorar Cursos",
-    "loading": "Carregando cursos...",
-    "error": "Falha ao carregar cursos"
+    "exploreCourses": "Explorar Cursos"
   },
   "explore": {
     "title": "Explorar cursos",
@@ -60,9 +50,9 @@
     "enrollNow": "Inscreva-se agora",
     "alreadyEnrolled": "Já Inscrito",
     "viewCourse": "Ver Curso",
-    "loading": "Carregando cursos...",
-    "error": "Falha ao carregar cursos",
-    "retry": "Tentar novamente"
+    "enrolledCount": "{{count}} aluno(s) inscrito(s)",
+    "enrolledCount_one": "{{count}} aluno inscrito",
+    "enrolledCount_other": "{{count}} alunos inscritos"
   },
   "profile": {
     "title": "Seus Certificados",
@@ -83,7 +73,24 @@
     "certificates": "Certificados",
     "ranking": "Ranking",
     "download": "Download",
-    "changePassword": "Alterar senha"
+    "changePassword": "Alterar senha",
+    "viewCertificate": "Ver Certificado",
+    "completedAt": "Concluído em {{date}}",
+    "editProfileTitle": "Editar Perfil",
+    "changePhoto": "Alterar Foto",
+    "saveChanges": "Salvar Alterações",
+    "profileUpdated": "Perfil atualizado com sucesso!",
+    "phone": "Celular",
+    "dateOfBirth": "Data de Nascimento",
+    "dateOfBirthPlaceholder": "DD/MM/AAAA"
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "monthly": "Mensal",
+    "yourPosition": "Sua posição",
+    "points": "{{count}} pts",
+    "noData": "Nenhum dado de ranking ainda. Complete seções para aparecer aqui!",
+    "position": "{{position}}°"
   },
   "course": {
     "startCourse": "Iniciar Curso",
@@ -103,8 +110,7 @@
     "unenrollConfirmTitle": "Desinscrever do Curso?",
     "unenrollConfirmMessage": "Tem certeza de que deseja se desinscrever deste curso? Seu progresso será salvo.",
     "unenrollConfirm": "Desinscrever",
-    "cancel": "Cancelar",
-    "loading": "Carregando curso..."
+    "cancel": "Cancelar"
   },
   "section": {
     "question": "Questão {{current}} de {{total}}",
@@ -114,18 +120,7 @@
     "checkAnswer": "Verificar Resposta",
     "nextQuestion": "Próxima Questão",
     "viewResults": "Ver Resultados",
-    "exitActivity": "Sair da Atividade",
-    "exitConfirmTitle": "Sair da Atividade?",
-    "exitConfirmMessage": "Seu progresso será salvo. Tem certeza de que deseja sair?",
-    "exitConfirm": "Sair",
-    "readAllPages": "Leia todas as páginas para continuar",
-    "completeAndContinue": "Concluir e Continuar",
-    "replaySection": "Repetir Seção",
-    "correct": "Correto!",
-    "incorrect": "Incorreto. A resposta é {{answer}}.",
-    "correctAnswer": "Resposta correta",
-    "courseName": "Nome do Curso",
-    "loading": "Carregando seção..."
+    "noVideo": "Esta seção possui apenas conteúdo textual. Prossiga para as questões abaixo."
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",
@@ -141,11 +136,95 @@
     "completed": "completou com sucesso o curso",
     "date": "Data de Conclusão",
     "share": "Compartilhar Certificado",
-    "loading": "Carregando certificado..."
+    "headerTitle": "Seu Certificado",
+    "congratulations": "Parabéns!",
+    "completedSubtitle": "Você concluiu o curso com sucesso",
+    "download": "Baixar Certificado",
+    "backToCourses": "Voltar aos Cursos",
+    "keepLearning": "Continue aprendendo! Confira mais cursos para dar sequência à sua jornada educacional.",
+    "permissionRequired": "Permissão Necessária",
+    "permissionMessage": "Permita o acesso à galeria para salvar o certificado.",
+    "savedSuccess": "Certificado salvo na sua galeria de fotos.",
+    "saveError": "Falha ao salvar. Tente novamente.",
+    "success": "Sucesso!"
+  },
+  "review": {
+    "title": "Avalie o Curso",
+    "subtitle": "Sua opinião ajuda outros alunos e os criadores do curso",
+    "ratingLabel": "Qual sua nota?",
+    "tagsLabel": "O que mais gostou?",
+    "tagContent": "Conteúdo",
+    "tagTeacher": "Didática",
+    "tagPractice": "Prática",
+    "tagMaterial": "Material",
+    "tagPace": "Ritmo",
+    "commentLabel": "Comentário (opcional)",
+    "commentPlaceholder": "Conte mais sobre sua experiência...",
+    "submit": "Enviar Avaliação",
+    "skip": "Pular",
+    "thankYou": "Obrigado pela avaliação!",
+    "alreadyReviewed": "Você já avaliou este curso"
+  },
+  "auth": {
+    "welcomeTitle": "Bem-vindo ao Educado!",
+    "welcomeSubtitle": "Aprenda, evolua e conquiste certificados com cursos criados por especialistas.",
+    "createAccount": "Criar Conta",
+    "or": "ou",
+    "loginExisting": "Já tenho uma conta",
+    "registerTitle": "Crie sua Conta",
+    "registerSubtitle": "Preencha seu nome para começar. Email e celular são opcionais.",
+    "registerFillRequired": "Nome e sobrenome são obrigatórios",
+    "firstName": "Nome",
+    "firstNamePlaceholder": "Seu nome",
+    "lastName": "Sobrenome",
+    "lastNamePlaceholder": "Seu sobrenome",
+    "emailOptional": "Email (opcional)",
+    "phoneOptional": "Celular (opcional)",
+    "phonePlaceholder": "Seu número de celular",
+    "loginTitle": "Bem-vindo de Volta",
+    "loginSubtitle": "Faça login para continuar aprendendo",
+    "loginSubtitleEmail": "Digite seu email para encontrar sua conta",
+    "loginFillEmail": "Por favor, insira seu email",
+    "accountNotFound": "Nenhuma conta encontrada com este email. Tente criar uma nova conta.",
+    "email": "Email",
+    "emailPlaceholder": "seu@email.com",
+    "password": "Senha",
+    "passwordPlaceholder": "Sua senha",
+    "login": "Entrar",
+    "logout": "Sair",
+    "logoutConfirmTitle": "Sair?",
+    "logoutConfirmMessage": "Tem certeza de que deseja sair?",
+    "error": "Erro de Login",
+    "fillAllFields": "Por favor, insira seu email e senha",
+    "invalidCredentials": "Email ou senha inválidos",
+    "validationError": "Verifique seus dados",
+    "serverError": "Erro no servidor. Tente novamente mais tarde",
+    "networkError": "Sem conexão. Verifique sua internet"
+  },
+  "downloads": {
+    "title": "Meus Downloads",
+    "downloadCourse": "Baixar Curso",
+    "downloading": "Baixando...",
+    "downloadComplete": "Baixado",
+    "deleteDownload": "Remover Download",
+    "deleteConfirmTitle": "Remover Download?",
+    "deleteConfirmMessage": "Isso removerá a cópia offline deste curso. Você pode baixá-lo novamente depois.",
+    "noDownloads": "Nenhum curso baixado ainda. Baixe um curso para acessá-lo offline.",
+    "downloadProgress": "{{percent}}% baixado",
+    "downloadSuccess": "Curso baixado com sucesso!",
+    "downloadError": "Falha ao baixar o curso. Tente novamente.",
+    "sections": "{{count}} seções"
   },
   "errors": {
     "loadCourse": "Falha ao carregar curso",
     "loadSection": "Falha ao carregar seção",
+    "loadCourses": "Falha ao carregar cursos",
     "generic": "Algo deu errado"
+  },
+  "offline": {
+    "title": "Sem Conexão",
+    "message": "Você está offline. Acesse seus cursos baixados para continuar estudando.",
+    "goToDownloads": "Ver Meus Downloads",
+    "retry": "Tentar Novamente"
   }
 }

@@ -1,17 +1,17 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course } from '@/data/mock-data'
-import { useCourses } from '@/hooks/api/useCourses'
+import { useGamificationSummary } from '@/hooks/useGamification'
+import { useEnrollments } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { getEnrolledCourses } from '@/utils/enrollment-storage'
-import { getCourseCompletionPercentage } from '@/utils/progress-storage'
+import { ApiEnrollment } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,116 +23,107 @@ export default function CoursesScreen() {
   const router = useRouter()
   const colors = AppColors()
   const { currentLanguage } = useLanguage()
-  const [courseProgress, setCourseProgress] = useState<Record<string, number>>(
-    {}
-  )
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([])
 
-  // Fetch courses from API
-  const { data: courses, isLoading, error } = useCourses()
+  const {
+    data: enrollments = [],
+    isLoading,
+    error: enrollmentsError,
+    refetch: refetchEnrollments,
+  } = useEnrollments()
 
-  const loadData = useCallback(async () => {
-    if (!courses?.length) return
+  const {
+    data: gamification,
+    refetch: refetchGamification,
+  } = useGamificationSummary()
 
-    // Load enrolled course IDs
-    const enrolledIds = await getEnrolledCourses()
+  const [refreshing, setRefreshing] = useState(false)
 
-    // Filter courses to only show enrolled ones
-    const enrolled = courses.filter((course) => enrolledIds.includes(course.id))
-    setEnrolledCourses(enrolled)
-
-    // Load progress for enrolled courses
-    const progress: Record<string, number> = {}
-    for (const course of enrolled) {
-      const percentage = await getCourseCompletionPercentage(
-        course.id,
-        course.sections?.length || 0
-      )
-      progress[course.id] = percentage
-    }
-    setCourseProgress(progress)
-  }, [courses])
-
-  useEffect(() => {
-    if (courses) {
-      loadData()
-    }
-  }, [courses, loadData])
-
-  // Reload enrolled courses when screen comes into focus
+  // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      if (courses) {
-        loadData()
-      }
-    }, [courses, loadData])
+      refetchEnrollments()
+      refetchGamification()
+    }, [refetchEnrollments, refetchGamification])
   )
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([refetchEnrollments(), refetchGamification()])
+    setRefreshing(false)
+  }, [refetchEnrollments, refetchGamification])
+
+  // Filter active enrollments that have course data
+  const activeEnrollments = useMemo(() => {
+    return enrollments.filter(
+      (e) => (e.status === 'ACTIVE' || e.status === 'COMPLETED') && e.course
+    )
+  }, [enrollments])
 
   const handleCoursePress = (courseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     router.push(`/(tabs)/courses/${courseId}`)
   }
 
-  // Calculate total sections completed and total sections for enrolled courses
-  const getTotalProgress = () => {
-    let completedSections = 0
-    let totalSections = 0
-    enrolledCourses.forEach((course) => {
-      if (!course.sections?.length) return
-      totalSections += course.sections?.length || 0
-      const progress = courseProgress[course.id] || 0
-      completedSections += Math.round(
-        (progress / 100) * (course.sections?.length || 0)
-      )
-    })
-    return { completedSections, totalSections }
-  }
+  const currentLevel = gamification?.currentLevel ?? 1
+  const levelName = gamification?.levelName ?? ''
+  const xpProgress = gamification?.xpProgress ?? 0
+  const xpNeeded = gamification?.xpNeeded ?? 1
+  const xpPercent = xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
 
-  const { completedSections, totalSections } = getTotalProgress()
-  const levelProgress =
-    totalSections > 0 ? (completedSections / totalSections) * 100 : 0
-  const pointsToNextLevel = 10
-
-  // Show loading state
   if (isLoading) {
     return (
       <View
-        key={currentLanguage}
         style={[
           styles.container,
-          styles.centerContainer,
+          styles.centerContent,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <ActivityIndicator size="large" color="#4A90A4" />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          {t('home.loading') || 'Loading...'}
-        </Text>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
 
-  // Show error state
-  if (error) {
+  // Offline state
+  if (enrollmentsError) {
     return (
       <View
         key={currentLanguage}
         style={[
           styles.container,
-          styles.centerContainer,
+          styles.centerContent,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Ionicons name="alert-circle" size={64} color="#EF4444" />
-        <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-          {t('home.error') || 'Failed to load courses'}
+        <Ionicons name="cloud-offline-outline" size={80} color={colors.textSecondary} />
+        <Text style={[styles.emptyStateText, { color: colors.textPrimary }]}>
+          {t('offline.title')}
         </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+          {t('offline.message')}
+        </Text>
+        <TouchableOpacity
+          style={[styles.exploreButton, { marginTop: 24 }]}
+          onPress={() => router.push('/(tabs)/downloads')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.exploreButtonText}>{t('offline.goToDownloads')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 12 }}
+          onPress={() => refetchEnrollments()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+            {t('offline.retry')}
+          </Text>
+        </TouchableOpacity>
       </View>
     )
   }
 
   // Show message if no enrolled courses
-  if (enrolledCourses.length === 0) {
+  if (activeEnrollments.length === 0) {
     return (
       <View
         key={currentLanguage}
@@ -145,6 +136,7 @@ export default function CoursesScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
@@ -210,6 +202,7 @@ export default function CoursesScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header with Logo and Welcome */}
         <View style={styles.header}>
@@ -230,38 +223,38 @@ export default function CoursesScreen() {
           style={[styles.levelCard, { backgroundColor: colors.cardBackground }]}
         >
           <Text style={[styles.levelTitle, { color: '#4A90A4' }]}>
-            {t('home.level', { level: 1 })}
+            {t('home.level', { level: currentLevel })}
+            {levelName ? ` — ${levelName}` : ''}
           </Text>
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBarBackground}>
               <View
-                style={[styles.progressBarFill, { width: `${levelProgress}%` }]}
+                style={[styles.progressBarFill, { width: `${xpPercent}%` }]}
               />
             </View>
           </View>
           <Text
             style={[styles.levelProgressText, { color: colors.textSecondary }]}
           >
-            {t('home.levelProgress', { points: pointsToNextLevel })}
+            {t('home.levelProgress', { points: xpNeeded - xpProgress })}
           </Text>
         </View>
 
         {/* Course Cards */}
-        {enrolledCourses.map((course) => {
-          const progress = courseProgress[course.id] || 0
-          const completedCount = Math.round(
-            (progress / 100) * (course.sections?.length || 0)
-          )
-          const totalCount = course.sections?.length || 0
+        {activeEnrollments.map((enrollment: ApiEnrollment) => {
+          const course = enrollment.course!
+          const progress = enrollment.progressPercent
+          const completedCount = enrollment.completedSections
+          const totalCount = enrollment.totalSections
 
           return (
             <TouchableOpacity
-              key={course.id}
+              key={enrollment.id}
               style={[
                 styles.courseCard,
                 { backgroundColor: colors.cardBackground },
               ]}
-              onPress={() => handleCoursePress(course.id)}
+              onPress={() => handleCoursePress(enrollment.courseId)}
               activeOpacity={0.7}
             >
               <View style={styles.courseHeader}>
@@ -272,6 +265,7 @@ export default function CoursesScreen() {
                 />
                 <Text
                   style={[styles.courseTitle, { color: colors.textPrimary }]}
+                  numberOfLines={2}
                 >
                   {course.title}
                 </Text>
@@ -291,6 +285,7 @@ export default function CoursesScreen() {
                       styles.metadataText,
                       { color: colors.textSecondary },
                     ]}
+                    numberOfLines={2}
                   >
                     {course.shortDescription}
                   </Text>
@@ -349,6 +344,10 @@ export default function CoursesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     paddingTop: 60,
@@ -419,6 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     flex: 1,
+    flexShrink: 1,
   },
   courseDivider: {
     height: 1,
@@ -436,6 +436,8 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     fontSize: 15,
+    flex: 1,
+    flexShrink: 1,
   },
   courseProgressContainer: {
     gap: 8,
@@ -495,19 +497,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  centerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    textAlign: 'center',
   },
 })

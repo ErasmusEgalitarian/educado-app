@@ -1,27 +1,22 @@
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import QuestionCard from '@/components/Section/QuestionCard'
-import SectionProgressBar from '@/components/Section/SectionProgressBar'
-import TextReadingCard from '@/components/Section/TextReadingCard'
-import TrueFalseCard from '@/components/Section/TrueFalseCard'
-import VideoPlayerWithPauses from '@/components/Section/VideoPlayerWithPauses'
+import VideoPlayer from '@/components/Section/VideoPlayer'
 import { AppColors } from '@/constants/theme/AppColors'
-import { Activity, ActivityType, Section } from '@/data/mock-data'
-import { useCourse } from '@/hooks/api/useCourse'
-import { useSyncProgressToBackend } from '@/hooks/api/useProgressSync'
+import { useCourse } from '@/hooks/useCourses'
+import {
+  useCompleteCourse,
+  useSaveSectionProgress,
+} from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import {
-  hasPassedCourse,
-  isCourseCompleted,
-  markCourseCompleted,
-  saveSectionProgress,
+  saveSectionProgress as saveLocalSectionProgress,
+  isCourseCompleted as checkLocalCourseCompleted,
+  markCourseCompleted as markLocalCourseCompleted,
 } from '@/utils/progress-storage'
-import { syncCertificatesToBackend } from '@/utils/progress-sync'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  ActivityIndicator,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,13 +25,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-type Phase = 'activities' | 'results'
-
-interface ActivityAnswer {
-  activityId: string
-  isCorrect: boolean
-  answer: number | boolean
-}
+type Phase = 'video' | 'questions' | 'results'
 
 export default function SectionScreen() {
   const { courseId, sectionId } = useLocalSearchParams<{
@@ -47,511 +36,256 @@ export default function SectionScreen() {
   const colors = AppColors()
   const insets = useSafeAreaInsets()
 
-  // Fetch course from API
-  const { data: course, isLoading, error } = useCourse(courseId)
+  const { data: course } = useCourse(courseId)
+  const saveSectionProgressMutation = useSaveSectionProgress()
+  const markCourseCompletedMutation = useCompleteCourse()
 
-  // Sync mutation
-  const { mutate: syncProgress } = useSyncProgressToBackend()
-
-  // Get section from course
   const section = useMemo(() => {
     return course?.sections.find((s) => s.id === sectionId)
   }, [course, sectionId])
 
-  // Get next section
-  const getNextSection = (): Section | null => {
-    if (!course) return null
+  const nextSection = useMemo(() => {
+    if (!course || !sectionId) return null
     const currentIndex = course.sections.findIndex((s) => s.id === sectionId)
     if (currentIndex === -1 || currentIndex === course.sections.length - 1) {
       return null
     }
     return course.sections[currentIndex + 1]
-  }
+  }, [course, sectionId])
 
-  const [phase, setPhase] = useState<Phase>('activities')
-  const [currentActivityIndex, setCurrentActivityIndex] = useState(0)
-  const [activityAnswers, setActivityAnswers] = useState<ActivityAnswer[]>([])
-  const [showExitModal, setShowExitModal] = useState(false)
-  const [isVideoPaused, setIsVideoPaused] = useState(false)
-  const [hasAnsweredCurrentPause, setHasAnsweredCurrentPause] = useState(false)
-  const [isVideoComplete, setIsVideoComplete] = useState(false)
-
-  // Get activities from section (support both legacy questions and new activities)
-  const activities: Activity[] = useMemo(() => {
-    if (section?.activities && section.activities.length > 0) {
-      return section.activities
-    }
-
-    // Convert legacy questions to activities format
-    if (section?.questions && section.questions.length > 0) {
-      return section.questions.map((q) => ({
-        id: q.id,
-        type: (q.type === 'true_false'
-          ? 'true_false'
-          : 'multiple_choice') as ActivityType,
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        icon: q.icon,
-      }))
-    }
-
-    return []
-  }, [section])
+  const [phase, setPhase] = useState<Phase>('video')
+  const [videoWatchPercentage, setVideoWatchPercentage] = useState(0)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<
+    Array<{ isCorrect: boolean; answer: number | boolean }>
+  >([])
 
   // Reset all state when sectionId changes
   useEffect(() => {
-    setPhase('activities')
-    setCurrentActivityIndex(0)
-    setActivityAnswers([])
-    setIsVideoPaused(false)
-    setHasAnsweredCurrentPause(false)
-    setIsVideoComplete(false)
+    setPhase('video')
+    setVideoWatchPercentage(0)
+    setCurrentQuestionIndex(0)
+    setAnswers([])
   }, [sectionId])
 
-  // Show loading state
-  if (isLoading) {
+  if (!course || !section) {
     return (
       <View
         style={[
           styles.container,
-          styles.centerContainer,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <ActivityIndicator size="large" color="#4A90A4" />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          {t('section.loading') || 'Loading section...'}
-        </Text>
-      </View>
-    )
-  }
-
-  // Show error state
-  if (error || !course || !section || activities.length === 0) {
-    return (
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: colors.backgroundTeal,
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <Text style={{ color: colors.textLight }}>
+        <Text style={{ color: colors.textPrimary }}>
           {t('errors.loadSection')}
         </Text>
       </View>
     )
   }
 
-  const currentActivity = activities[currentActivityIndex]
-  const isLastActivity = currentActivityIndex === activities.length - 1
-
-  // Get all video pause timestamps for video-based sections
-  const videoPauseActivities = activities.filter(
-    (a) => a.type === 'video_pause'
-  )
-  const pauseTimestamps = videoPauseActivities.map((a) => a.pauseTimestamp || 0)
-
-  const handleVideoPauseReached = (timestamp: number) => {
-    setIsVideoPaused(true)
-    setHasAnsweredCurrentPause(false)
-
-    // Find the activity index for this pause
-    const activityIndex = activities.findIndex(
-      (a) => a.type === 'video_pause' && a.pauseTimestamp === timestamp
-    )
-    if (activityIndex !== -1) {
-      setCurrentActivityIndex(activityIndex)
-    }
+  const handleVideoProgress = (percentage: number) => {
+    setVideoWatchPercentage(percentage)
   }
 
-  const handleVideoComplete = () => {
-    setIsVideoComplete(true)
-  }
-
-  const handleContinueAfterVideo = () => {
-    // Check if there are any unanswered activities
-    const answeredActivityIds = new Set(
-      activityAnswers.map((answer) => answer.activityId)
-    )
-
-    const unansweredActivities = activities.filter(
-      (activity) => !answeredActivityIds.has(activity.id)
-    )
-
-    if (unansweredActivities.length > 0) {
-      // Find the first unanswered activity
-      const firstUnansweredIndex = activities.findIndex(
-        (activity) => !answeredActivityIds.has(activity.id)
-      )
-
-      if (firstUnansweredIndex !== -1) {
-        setCurrentActivityIndex(firstUnansweredIndex)
-      }
-    } else {
-      // All activities answered, show results
+  const handleReadyToAnswer = () => {
+    if (section.questions.length === 0) {
+      // No questions — skip to completion
       setPhase('results')
+      return
     }
+    setPhase('questions')
   }
 
-  const handleActivityAnswer = (
-    isCorrect: boolean,
-    answer: number | boolean
-  ) => {
-    if (!currentActivity) return
+  const handleAnswer = (isCorrect: boolean, answer: number | boolean) => {
+    const newAnswers = [...answers, { isCorrect, answer }]
+    setAnswers(newAnswers)
 
-    const newAnswer: ActivityAnswer = {
-      activityId: currentActivity.id,
-      isCorrect,
-      answer,
-    }
-    setActivityAnswers([...activityAnswers, newAnswer])
-    setHasAnsweredCurrentPause(true)
-
-    // Move to next activity or show results
-    setTimeout(() => {
-      if (isLastActivity) {
+    if (currentQuestionIndex < section.questions.length - 1) {
+      setTimeout(() => {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      }, 1500)
+    } else {
+      setTimeout(() => {
         setPhase('results')
-      } else {
-        // If this was a video pause, resume video only if video is not complete
-        if (currentActivity.type === 'video_pause' && !isVideoComplete) {
-          setIsVideoPaused(false)
-        }
-        setCurrentActivityIndex(currentActivityIndex + 1)
-      }
-    }, 1500)
-  }
-
-  const handleTextReadingComplete = () => {
-    if (!currentActivity) return
-
-    // Text reading doesn't have a correct/incorrect answer
-    const newAnswer: ActivityAnswer = {
-      activityId: currentActivity.id,
-      isCorrect: true,
-      answer: true,
+      }, 1500)
     }
-    setActivityAnswers([...activityAnswers, newAnswer])
-
-    // Move to next activity or show results
-    if (isLastActivity) {
-      setPhase('results')
-    } else {
-      setCurrentActivityIndex(currentActivityIndex + 1)
-    }
-  }
-
-  const handleExitSection = () => {
-    setShowExitModal(true)
-  }
-
-  const confirmExit = () => {
-    setShowExitModal(false)
-    router.replace(`/(tabs)/courses/${courseId}`)
-  }
-
-  const handleReplaySection = () => {
-    setPhase('activities')
-    setCurrentActivityIndex(0)
-    setActivityAnswers([])
-    setIsVideoPaused(false)
-    setHasAnsweredCurrentPause(false)
-    setIsVideoComplete(false)
   }
 
   const handleCompleteSection = async () => {
-    const correctAnswers = activityAnswers.filter((a) => a.isCorrect).length
-    const totalActivities = activities.length
+    const correctAnswers = answers.filter((a) => a.isCorrect).length
+    const totalQuestions = section.questions.length
 
-    // Save progress locally
-    await saveSectionProgress(
+    // Save progress locally (for score tracking)
+    await saveLocalSectionProgress(
       courseId,
       sectionId,
       correctAnswers,
-      totalActivities
+      totalQuestions
     )
 
-    // Check if all sections are completed
-    const nextSection = getNextSection()
-    const courseCompleted = await isCourseCompleted(
+    // Save progress to API (completion only)
+    try {
+      await saveSectionProgressMutation.mutateAsync({
+        courseId,
+        sectionId,
+        score: correctAnswers,
+        totalQuestions: totalQuestions,
+      })
+    } catch {
+      // Continue even if API save fails
+    }
+
+    // Check if course is completed
+    const courseCompleted = await checkLocalCourseCompleted(
       courseId,
       course.sections.length
     )
 
     if (courseCompleted) {
-      const passed = await hasPassedCourse(
-        courseId,
-        course.sections.length,
-        course.passingThreshold
-      )
+      await markLocalCourseCompleted(courseId)
 
-      await markCourseCompleted(courseId)
-      console.log('🎉 Course completed! Syncing progress and certificates...')
+      // Sync completion to API
+      let isOnline = true
+      try {
+        await markCourseCompletedMutation.mutateAsync(courseId)
+      } catch {
+        isOnline = false
+      }
 
-      // Sync progress to backend (don't await to not block navigation)
-      syncProgress(courseId)
-
-      // Also sync certificates in case they were created locally
-      syncCertificatesToBackend().catch((error) => {
-        console.error(
-          'Failed to sync certificates after course completion:',
-          error
-        )
-      })
-
-      if (passed) {
-        console.log('✅ Course passed! Navigating to certificate page...')
+      // Skip review when offline — go straight to certificate
+      if (isOnline) {
+        router.replace(`/(tabs)/courses/${courseId}/review`)
+      } else {
         router.replace(`/(tabs)/courses/${courseId}/certificate`)
-      } else {
-        console.log('Course completed but not passed, returning to course page')
-        router.replace(`/(tabs)/courses/${courseId}`)
       }
+    } else if (nextSection) {
+      router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
     } else {
-      // Sync to backend (don't await to not block navigation)
-      syncProgress(courseId)
-
-      if (nextSection) {
-        router.replace(`/(tabs)/courses/${courseId}/section/${nextSection.id}`)
-      } else {
-        router.replace(`/(tabs)/courses/${courseId}`)
-      }
+      router.replace(`/(tabs)/courses/${courseId}`)
     }
   }
 
-  const correctAnswersCount = activityAnswers.filter((a) => a.isCorrect).length
-  const scorePercentage = Math.round(
-    (correctAnswersCount / activities.length) * 100
-  )
-
-  const renderActivity = () => {
-    if (!currentActivity) return null
-
-    // If video is complete, render video_pause activities as standalone questions
-    const shouldRenderAsStandalone =
-      currentActivity.type === 'video_pause' && isVideoComplete
-
-    if (shouldRenderAsStandalone) {
-      return (
-        <ScrollView
-          style={styles.activityScroll}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {currentActivity.correctAnswer === true ||
-          currentActivity.correctAnswer === false ? (
-            <TrueFalseCard
-              question={currentActivity.question || ''}
-              imageUrl={currentActivity.imageUrl}
-              onAnswer={handleActivityAnswer}
-              correctAnswer={currentActivity.correctAnswer}
-              currentActivity={currentActivityIndex + 1}
-              totalActivities={activities.length}
-            />
-          ) : (
-            <QuestionCard
-              question={{
-                id: currentActivity.id,
-                type: 'multiple_choice',
-                question: currentActivity.question || '',
-                options: currentActivity.options || [],
-                correctAnswer: currentActivity.correctAnswer as number,
-                icon: currentActivity.icon,
-              }}
-              onAnswer={handleActivityAnswer}
-              currentQuestion={currentActivityIndex + 1}
-              totalQuestions={activities.length}
-              imageUrl={currentActivity.imageUrl}
-            />
-          )}
-        </ScrollView>
-      )
-    }
-
-    switch (currentActivity.type) {
-      case 'video_pause':
-        // Show video player for video activities, with question below when paused
-        return (
-          <ScrollView
-            style={styles.videoActivityContainer}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.videoActivityContent}
-          >
-            {section.videoUrl && (
-              <View style={styles.videoContainer}>
-                <VideoPlayerWithPauses
-                  videoUrl={section.videoUrl}
-                  pauseTimestamps={pauseTimestamps}
-                  onPauseReached={handleVideoPauseReached}
-                  isPaused={isVideoPaused}
-                  onResume={() => {
-                    setIsVideoPaused(false)
-                    setHasAnsweredCurrentPause(false)
-                  }}
-                  onVideoComplete={handleVideoComplete}
-                />
-              </View>
-            )}
-
-            {/* Show continue button when video is complete */}
-            {isVideoComplete && (
-              <View style={styles.continueContainer}>
-                <ButtonPrimary
-                  title={t('common.continue')}
-                  onPress={handleContinueAfterVideo}
-                  icon="arrow-forward"
-                  fullWidth
-                />
-              </View>
-            )}
-
-            {/* Show question when video is paused */}
-            {isVideoPaused && !hasAnsweredCurrentPause && (
-              <View style={styles.questionBelowVideo}>
-                {currentActivity.correctAnswer === true ||
-                currentActivity.correctAnswer === false ? (
-                  <TrueFalseCard
-                    question={currentActivity.question || ''}
-                    onAnswer={handleActivityAnswer}
-                    correctAnswer={currentActivity.correctAnswer}
-                    currentActivity={currentActivityIndex + 1}
-                    totalActivities={activities.length}
-                  />
-                ) : (
-                  <QuestionCard
-                    question={{
-                      id: currentActivity.id,
-                      type: 'multiple_choice',
-                      question: currentActivity.question || '',
-                      options: currentActivity.options || [],
-                      correctAnswer: currentActivity.correctAnswer as number,
-                      icon: currentActivity.icon,
-                    }}
-                    onAnswer={handleActivityAnswer}
-                    currentQuestion={currentActivityIndex + 1}
-                    totalQuestions={activities.length}
-                  />
-                )}
-              </View>
-            )}
-          </ScrollView>
-        )
-
-      case 'true_false':
-        return (
-          <ScrollView
-            style={styles.activityScroll}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            <TrueFalseCard
-              question={currentActivity.question || ''}
-              imageUrl={currentActivity.imageUrl}
-              onAnswer={handleActivityAnswer}
-              correctAnswer={currentActivity.correctAnswer as boolean}
-              currentActivity={currentActivityIndex + 1}
-              totalActivities={activities.length}
-            />
-          </ScrollView>
-        )
-
-      case 'text_reading':
-        return (
-          <TextReadingCard
-            textPages={currentActivity.textPages || []}
-            courseTitle={course.title}
-            sectionTitle={section.title}
-            onComplete={handleTextReadingComplete}
-          />
-        )
-
-      case 'multiple_choice':
-        return (
-          <ScrollView
-            style={styles.activityScroll}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            <QuestionCard
-              question={{
-                id: currentActivity.id,
-                type: 'multiple_choice',
-                question: currentActivity.question || '',
-                options: currentActivity.options || [],
-                correctAnswer: currentActivity.correctAnswer as number,
-                icon: currentActivity.icon,
-              }}
-              onAnswer={handleActivityAnswer}
-              currentQuestion={currentActivityIndex + 1}
-              totalQuestions={activities.length}
-              imageUrl={currentActivity.imageUrl}
-            />
-          </ScrollView>
-        )
-
-      default:
-        return null
-    }
-  }
+  const correctAnswersCount = answers.filter((a) => a.isCorrect).length
+  const scorePercentage =
+    section.questions.length > 0
+      ? Math.round((correctAnswersCount / section.questions.length) * 100)
+      : 100
 
   return (
     <View
       key={sectionId}
-      style={[styles.container, { backgroundColor: colors.cardBackground }]}
+      style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 8,
-            backgroundColor: colors.backgroundPrimary,
-          },
-        ]}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={handleExitSection}>
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+      <View style={[styles.header, { backgroundColor: colors.cardBackground }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.replace(`/(tabs)/courses/${courseId}`)}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-
-        {phase === 'activities' && (
-          <View style={styles.progressContainer}>
-            <SectionProgressBar
-              currentActivity={currentActivityIndex}
-              totalActivities={activities.length}
-            />
-          </View>
-        )}
+        <Text
+          style={[styles.headerTitle, { color: colors.textPrimary }]}
+          numberOfLines={1}
+        >
+          {section.title}
+        </Text>
+        <View style={styles.placeholder} />
       </View>
 
       {/* Content */}
-      {phase === 'activities' && (
-        <View style={styles.content}>
-          {renderActivity()}
+      {phase === 'video' && (
+        <>
+          <ScrollView
+            style={styles.videoContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <VideoPlayer
+              key={sectionId}
+              videoUrl={section.videoUrl}
+              onProgressUpdate={handleVideoProgress}
+              minimumWatchPercentage={80}
+            />
 
-          {/* Exit Link at bottom */}
-          {currentActivity.type !== 'text_reading' && (
-            <TouchableOpacity
-              style={styles.exitLink}
-              onPress={handleExitSection}
-            >
-              <Text style={[styles.exitLinkText, { color: colors.textLight }]}>
-                {t('section.exitActivity')}
+            <View style={styles.videoInfo}>
+              <Text
+                style={[styles.sectionTitle, { color: colors.textPrimary }]}
+              >
+                {section.title}
               </Text>
-            </TouchableOpacity>
-          )}
+              <Text
+                style={[
+                  styles.sectionDescription,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Watch the video to learn about this topic. You'll need to watch
+                at least 80% before answering questions.
+              </Text>
+
+              <View style={styles.questionsInfo}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text
+                  style={[
+                    styles.questionsText,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {section.questions.length} questions to answer after video
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor: colors.cardBackground,
+                paddingBottom: Math.max(insets.bottom, 24),
+              },
+            ]}
+          >
+            <ButtonPrimary
+              title={t('course.readyToAnswer')}
+              onPress={handleReadyToAnswer}
+              icon="checkmark"
+              fullWidth
+              disabled={videoWatchPercentage < 80}
+            />
+            {videoWatchPercentage < 80 && (
+              <Text style={[styles.watchHint, { color: colors.textSecondary }]}>
+                Watch {Math.round(80 - videoWatchPercentage)}% more to continue
+              </Text>
+            )}
+          </View>
+        </>
+      )}
+
+      {phase === 'questions' && (
+        <View style={styles.questionsContainer}>
+          <ScrollView
+            style={styles.questionsScroll}
+            contentContainerStyle={styles.questionsScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <QuestionCard
+              question={section.questions[currentQuestionIndex]}
+              onAnswer={handleAnswer}
+              currentQuestion={currentQuestionIndex + 1}
+              totalQuestions={section.questions.length}
+            />
+          </ScrollView>
         </View>
       )}
 
       {phase === 'results' && (
         <>
           <ScrollView
-            style={[
-              styles.resultsContainer,
-              { backgroundColor: colors.backgroundPrimary },
-            ]}
             contentContainerStyle={styles.resultsContent}
             showsVerticalScrollIndicator={false}
           >
@@ -575,82 +309,60 @@ export default function SectionScreen() {
             <Text
               style={[styles.resultsSubtitle, { color: colors.textSecondary }]}
             >
-              You answered {correctAnswersCount} out of {activities.length}{' '}
-              correctly
+              You answered {correctAnswersCount} out of{' '}
+              {section.questions.length} questions correctly
             </Text>
 
             <View style={styles.resultsDetails}>
-              {activities
-                .filter((a) => a.type !== 'text_reading')
-                .map((activity) => {
-                  const answerIndex = activityAnswers.findIndex(
-                    (a) => a.activityId === activity.id
-                  )
-                  const userAnswer =
-                    answerIndex !== -1 ? activityAnswers[answerIndex] : null
-                  const isCorrect = userAnswer?.isCorrect
+              {section.questions.map((question, index) => {
+                const userAnswer = answers[index]
+                const isCorrect = userAnswer?.isCorrect
 
-                  return (
-                    <View
-                      key={activity.id}
-                      style={[
-                        styles.resultItem,
-                        {
-                          backgroundColor: colors.cardBackground,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <View style={styles.resultHeader}>
-                        <Text
-                          style={[
-                            styles.resultQuestionNumber,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          Question {answerIndex + 1}
-                        </Text>
-                        <Ionicons
-                          name={isCorrect ? 'checkmark-circle' : 'close-circle'}
-                          size={24}
-                          color={isCorrect ? colors.success : colors.error}
-                        />
-                      </View>
+                return (
+                  <View
+                    key={question.id}
+                    style={[
+                      styles.resultItem,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={styles.resultHeader}>
                       <Text
                         style={[
-                          styles.resultQuestion,
-                          { color: colors.textPrimary },
+                          styles.resultQuestionNumber,
+                          { color: colors.textSecondary },
                         ]}
                       >
-                        {activity.question}
+                        Question {index + 1}
                       </Text>
+                      <Ionicons
+                        name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+                        size={24}
+                        color={isCorrect ? colors.success : colors.error}
+                      />
                     </View>
-                  )
-                })}
+                    <Text
+                      style={[
+                        styles.resultQuestion,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
+                      {question.question}
+                    </Text>
+                  </View>
+                )
+              })}
             </View>
-
-            {/* Replay Button */}
-            <TouchableOpacity
-              style={[
-                styles.replayButton,
-                { backgroundColor: colors.backgroundPrimary },
-              ]}
-              onPress={handleReplaySection}
-            >
-              <Ionicons name="refresh" size={20} color={colors.primary} />
-              <Text
-                style={[styles.replayButtonText, { color: colors.primary }]}
-              >
-                {t('section.replaySection')}
-              </Text>
-            </TouchableOpacity>
           </ScrollView>
 
           <View
             style={[
               styles.footer,
               {
-                backgroundColor: colors.backgroundPrimary,
+                backgroundColor: colors.cardBackground,
                 paddingBottom: Math.max(insets.bottom, 24),
               },
             ]}
@@ -665,62 +377,6 @@ export default function SectionScreen() {
           </View>
         </>
       )}
-
-      {/* Exit Confirmation Modal */}
-      <Modal
-        visible={showExitModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowExitModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: colors.cardBackground },
-            ]}
-          >
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-              {t('section.exitConfirmTitle')}
-            </Text>
-            <Text
-              style={[styles.modalMessage, { color: colors.textSecondary }]}
-            >
-              {t('section.exitConfirmMessage')}
-            </Text>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  { backgroundColor: colors.primaryLight },
-                ]}
-                onPress={() => setShowExitModal(false)}
-              >
-                <Text
-                  style={[styles.modalButtonText, { color: colors.primary }]}
-                >
-                  {t('common.cancel')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  { backgroundColor: colors.primary },
-                ]}
-                onPress={confirmExit}
-              >
-                <Text
-                  style={[styles.modalButtonText, { color: colors.textLight }]}
-                >
-                  {t('section.exitConfirm')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   )
 }
@@ -732,11 +388,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
     paddingBottom: 16,
     paddingHorizontal: 16,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -744,7 +399,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 2,
   },
   backButton: {
     width: 44,
@@ -752,45 +407,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  progressContainer: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  },
+  placeholder: {
+    width: 44,
+  },
+  videoContent: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-  },
-  videoActivityContainer: {
-    flex: 1,
-  },
-  videoActivityContent: {
-    paddingBottom: 100,
-  },
-  videoContainer: {
-    padding: 16,
-    paddingTop: 24,
-  },
-  continueContainer: {
+  videoInfo: {
     padding: 24,
+    paddingBottom: 120,
   },
-  questionBelowVideo: {
-    paddingTop: 8,
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 12,
   },
-  activityScroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  exitLink: {
-    position: 'absolute',
-    bottom: 24,
-    alignSelf: 'center',
-  },
-  exitLinkText: {
+  sectionDescription: {
     fontSize: 16,
-    textDecorationLine: 'underline',
+    lineHeight: 24,
+    marginBottom: 16,
   },
-  resultsContainer: {
+  questionsInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  questionsText: {
+    fontSize: 14,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  watchHint: {
+    textAlign: 'center',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  questionsContainer: {
     flex: 1,
+  },
+  questionsScroll: {
+    flex: 1,
+  },
+  questionsScrollContent: {
+    paddingBottom: 140,
   },
   resultsContent: {
     padding: 24,
@@ -805,7 +484,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     marginBottom: 24,
-    backgroundColor: '#F0F9FB',
   },
   scorePercentage: {
     fontSize: 32,
@@ -825,7 +503,6 @@ const styles = StyleSheet.create({
   },
   resultsDetails: {
     gap: 12,
-    marginBottom: 24,
   },
   resultItem: {
     padding: 16,
@@ -844,82 +521,5 @@ const styles = StyleSheet.create({
   },
   resultQuestion: {
     fontSize: 16,
-  },
-  replayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  replayButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  modalMessage: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  centerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 16,
   },
 })

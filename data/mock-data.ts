@@ -52,6 +52,7 @@ export interface Course {
   category: string // Category/tag for filtering
   rating?: number // Course rating out of 5
   tags: string[] // Tags for filtering and display
+  enrollmentCount?: number // Number of enrolled students
 }
 
 // Sample video URL for all sections
