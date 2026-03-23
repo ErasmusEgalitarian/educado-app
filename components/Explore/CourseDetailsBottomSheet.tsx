@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
 import React, { forwardRef, useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface CourseDetailsBottomSheetProps {
   course: Course | null
@@ -18,6 +19,7 @@ const CourseDetailsBottomSheet = forwardRef<
   CourseDetailsBottomSheetProps
 >(({ course, isEnrolled, onEnroll, onViewCourse }, ref) => {
   const colors = AppColors()
+  const insets = useSafeAreaInsets()
   const snapPoints = useMemo(() => ['85%'], [])
 
   if (!course) return null
@@ -38,7 +40,7 @@ const CourseDetailsBottomSheet = forwardRef<
       }}
       handleIndicatorStyle={{ backgroundColor: colors.textSecondary }}
     >
-      <BottomSheetView style={styles.contentContainer}>
+      <BottomSheetView style={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 24) + 60 }]}>
         <View style={styles.courseContainer}>
           {/* Course Title */}
           <View style={styles.header}>
@@ -151,7 +153,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     paddingHorizontal: 24,
-    paddingBottom: 24,
     flexDirection: 'column',
     justifyContent: 'space-between',
   },

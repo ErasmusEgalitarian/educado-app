@@ -1,8 +1,10 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
+import { getAuthHeaders } from '@/services/api'
 import { getVideoSource } from '@/utils/video-assets'
 import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   StyleSheet,
@@ -29,6 +31,7 @@ const VideoPlayerWithPauses: React.FC<VideoPlayerWithPausesProps> = ({
   onVideoComplete,
 }) => {
   const colors = AppColors()
+  const { token } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
@@ -38,7 +41,16 @@ const VideoPlayerWithPauses: React.FC<VideoPlayerWithPausesProps> = ({
   )
   const hasTriggeredComplete = useRef(false)
 
-  const player = useVideoPlayer(getVideoSource(videoUrl), (player) => {
+  // Build video source with auth headers for remote URLs
+  const videoSource = useMemo(() => {
+    const source = getVideoSource(videoUrl)
+    if (typeof source === 'string' && source.startsWith('http')) {
+      return { uri: source, headers: getAuthHeaders(token) }
+    }
+    return source
+  }, [videoUrl, token])
+
+  const player = useVideoPlayer(videoSource, (player) => {
     player.loop = false
     player.play()
   })

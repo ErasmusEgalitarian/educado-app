@@ -6,8 +6,8 @@ import {
   apiUpdateStudentProfile,
   apiGetStudentProfile,
   apiUploadImage,
+  getAuthHeaders,
   getImageUrl,
-  getStoredToken,
   storeUser,
 } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
@@ -35,7 +35,7 @@ export default function EditProfileScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { currentLanguage } = useLanguage()
-  const { user, refreshUser } = useAuth()
+  const { user, token, refreshUser } = useAuth()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -58,8 +58,7 @@ export default function EditProfileScreen() {
       setDateOfBirth(profile.dateOfBirth ?? '')
       if (profile.avatarMediaId) {
         setAvatarMediaId(profile.avatarMediaId)
-        const token = await getStoredToken()
-        setAvatarUri(getImageUrl(profile.avatarMediaId, token ?? undefined))
+        setAvatarUri(getImageUrl(profile.avatarMediaId))
       }
     } catch {
       Alert.alert(t('common.error'), t('errors.generic'))
@@ -175,7 +174,7 @@ export default function EditProfileScreen() {
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handlePickImage} activeOpacity={0.7}>
             {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatar} contentFit="cover" />
+              <Image source={{ uri: avatarUri, headers: avatarUri.startsWith('http') ? getAuthHeaders(token) : undefined }} style={styles.avatar} contentFit="cover" />
             ) : (
               <View style={[styles.avatar, { backgroundColor: '#E0F2F1' }]}>
                 <Text style={styles.avatarText}>{userInitials}</Text>

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useGamificationSummary } from '@/hooks/useGamification'
 import { changeLanguage, getCurrentLanguage, t } from '@/i18n/config'
-import { getImageUrl } from '@/services/api'
+import { getAuthHeaders, getImageUrl } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
@@ -129,7 +129,7 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           {user?.avatarMediaId ? (
             <Image
-              source={{ uri: getImageUrl(user.avatarMediaId, token ?? undefined) }}
+              source={{ uri: getImageUrl(user.avatarMediaId), headers: getAuthHeaders(token) }}
               style={styles.avatar}
               contentFit="cover"
             />

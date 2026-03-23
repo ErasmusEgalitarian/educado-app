@@ -26,7 +26,9 @@ function getEffectiveQuestionType(
   return 'true_false'
 }
 
-// Coerce correctAnswer from API (may arrive as string "true"/"false" from JSON)
+// Coerce correctAnswer from API.
+// For true_false the value may arrive as boolean true/false, string "true"/"false",
+// or number 0/1 (web saves correctAlternativeIndex where 0=Verdadeiro, 1=Falso).
 function coerceCorrectAnswer(
   value: number | boolean | null,
   effectiveType: 'multiple_choice' | 'true_false'
@@ -34,7 +36,8 @@ function coerceCorrectAnswer(
   if (effectiveType === 'true_false') {
     if (typeof value === 'string') return value === 'true'
     if (typeof value === 'boolean') return value
-    return Boolean(value ?? false)
+    if (typeof value === 'number') return value === 0 // 0=Verdadeiro(true), 1=Falso(false)
+    return false
   }
   return Number(value) || 0
 }

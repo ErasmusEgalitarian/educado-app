@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useGlobalLeaderboard } from '@/hooks/useLeaderboard'
 import { t } from '@/i18n/config'
 import { getCurrentLanguage } from '@/i18n/config'
-import { ApiLeaderboardEntry, getImageUrl } from '@/services/api'
+import { ApiLeaderboardEntry, getAuthHeaders, getImageUrl } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -142,7 +142,7 @@ export default function RankingScreen() {
                     </Text>
                     {entry.avatarMediaId ? (
                       <Image
-                        source={{ uri: getImageUrl(entry.avatarMediaId, token ?? undefined) }}
+                        source={{ uri: getImageUrl(entry.avatarMediaId), headers: getAuthHeaders(token) }}
                         style={[styles.rowAvatar, highlighted && styles.rowAvatarHl]}
                         contentFit="cover"
                       />
@@ -183,7 +183,7 @@ function PodiumSlot({ entry, position, token }: { entry: ApiLeaderboardEntry; po
       <Text style={styles.podPts}>{entry.points} pts</Text>
       {entry.avatarMediaId ? (
         <Image
-          source={{ uri: getImageUrl(entry.avatarMediaId, token ?? undefined) }}
+          source={{ uri: getImageUrl(entry.avatarMediaId), headers: getAuthHeaders(token) }}
           style={[styles.podCircle, { width: size, height: size, borderRadius: size / 2 }]}
           contentFit="cover"
         />
