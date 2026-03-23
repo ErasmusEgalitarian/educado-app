@@ -10,9 +10,11 @@ import BottomSheet from '@gorhom/bottom-sheet'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import React, { useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -31,19 +33,32 @@ export default function ExploreScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const bottomSheetRef = useRef<BottomSheet>(null)
 
-  const { data: courses = [], isLoading, error } = useAllCourses()
-  const { data: enrollments = [] } = useEnrollments()
+  const { data: courses = [], isLoading, error, refetch: refetchCourses } = useAllCourses()
+  const { data: enrollments = [], refetch: refetchEnrollments } = useEnrollments()
   const enrollMutation = useEnroll()
+  const [refreshing, setRefreshing] = useState(false)
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([refetchCourses(), refetchEnrollments()])
+    setRefreshing(false)
+  }, [refetchCourses, refetchEnrollments])
 
   const enrolledCourseIds = enrollments.map((e) => e.courseId)
 
-  const categories = [
-    { id: 'all', label: t('explore.all') },
-    { id: 'finance', label: t('explore.finance') },
-    { id: 'arts', label: t('explore.arts') },
-    { id: 'history', label: t('explore.history') },
-    { id: 'science', label: t('explore.science') },
-  ]
+  const categories = useMemo(() => {
+    const countMap: Record<string, number> = {}
+    for (const course of courses) {
+      if (course.category) {
+        countMap[course.category] = (countMap[course.category] || 0) + 1
+      }
+    }
+    const sorted = Object.entries(countMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id]) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }))
+    return [{ id: 'all', label: t('explore.all') }, ...sorted]
+  }, [courses])
 
   const handleCategoryPress = (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -62,12 +77,11 @@ export default function ExploreScreen() {
 
     try {
       await enrollMutation.mutateAsync(selectedCourse.id)
+      bottomSheetRef.current?.close()
+      router.push(`/(tabs)/courses/${selectedCourse.id}`)
     } catch {
-      // Even if the API call fails, navigate to the course
+      Alert.alert(t('common.error'), t('errors.generic'))
     }
-
-    bottomSheetRef.current?.close()
-    router.push(`/(tabs)/courses/${selectedCourse.id}`)
   }
 
   const handleViewCourse = () => {
@@ -112,17 +126,33 @@ export default function ExploreScreen() {
       >
         <Ionicons
           name="cloud-offline-outline"
-          size={64}
+          size={80}
           color={colors.textSecondary}
         />
-        <Text
-          style={[
-            styles.errorText,
-            { color: colors.textPrimary, marginTop: 16 },
-          ]}
-        >
-          {t('errors.loadCourses')}
+        <Text style={[styles.errorText, { color: colors.textPrimary, marginTop: 16 }]}>
+          {t('offline.title')}
         </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+          {t('offline.message')}
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 24 }}
+          onPress={() => router.push('/(tabs)/downloads')}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
+            {t('offline.goToDownloads')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 12 }}
+          onPress={() => refetchCourses()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+            {t('offline.retry')}
+          </Text>
+        </TouchableOpacity>
       </View>
     )
   }
@@ -140,6 +170,7 @@ export default function ExploreScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* Header with Logo */}
           <View style={styles.header}>
@@ -286,9 +317,27 @@ export default function ExploreScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t('explore.basic')}
+                    {getDifficultyLabel(course.difficulty)}
                   </Text>
                 </View>
+
+                {course.enrollmentCount != null && course.enrollmentCount > 0 && (
+                  <View style={styles.metadataRow}>
+                    <Ionicons
+                      name="people-outline"
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.metadataText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t('explore.enrolledCount', { count: course.enrollmentCount })}
+                    </Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           ))}
@@ -309,6 +358,19 @@ export default function ExploreScreen() {
       </View>
     </GestureHandlerRootView>
   )
+}
+
+const getDifficultyLabel = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner':
+      return t('explore.basic')
+    case 'intermediate':
+      return t('explore.intermediate')
+    case 'advanced':
+      return t('explore.advanced')
+    default:
+      return difficulty
+  }
 }
 
 const styles = StyleSheet.create({

@@ -1,9 +1,13 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useGamificationSummary } from '@/hooks/useGamification'
 import { changeLanguage, getCurrentLanguage, t } from '@/i18n/config'
+import { getImageUrl } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import React from 'react'
 import {
   Alert,
@@ -19,7 +23,9 @@ export default function ProfileScreen() {
   const colors = AppColors()
   const { currentLanguage, refreshLanguage } = useLanguage()
   const insets = useSafeAreaInsets()
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
+  const router = useRouter()
+  const { data: gamification } = useGamificationSummary()
 
   const firstName = user?.firstName || ''
   const lastName = user?.lastName || ''
@@ -28,13 +34,30 @@ export default function ProfileScreen() {
   const userInitials =
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'AA'
 
-  const daysStreak = 1
-  const level = 1
-  const levelProgress = 75
+  const daysStreak = gamification?.currentStreak ?? 0
+  const level = gamification?.currentLevel ?? 1
+  const xpProgress = gamification?.xpProgress ?? 0
+  const xpNeeded = gamification?.xpNeeded ?? 1
+  const levelProgress = xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
 
   const handleMenuPress = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    console.log(`Navigate to: ${screen}`)
+    switch (screen) {
+      case 'editProfile':
+        router.push('/(tabs)/edit-profile')
+        break
+      case 'certificates':
+        router.push('/(tabs)/certificates')
+        break
+      case 'ranking':
+        router.push('/(tabs)/ranking')
+        break
+      case 'download':
+        router.push('/(tabs)/downloads')
+        break
+      default:
+        console.log(`Navigate to: ${screen}`)
+    }
   }
 
   const handleToggleLanguage = async () => {
@@ -79,11 +102,6 @@ export default function ProfileScreen() {
       label: t('profile.download'),
       icon: 'download-outline' as const,
     },
-    {
-      id: 'changePassword',
-      label: t('profile.changePassword'),
-      icon: 'lock-closed-outline' as const,
-    },
   ]
 
   const languageLabel =
@@ -109,9 +127,17 @@ export default function ProfileScreen() {
       >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <View style={[styles.avatar, { backgroundColor: '#E0F2F1' }]}>
-            <Text style={styles.avatarText}>{userInitials}</Text>
-          </View>
+          {user?.avatarMediaId ? (
+            <Image
+              source={{ uri: getImageUrl(user.avatarMediaId, token ?? undefined) }}
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: '#E0F2F1' }]}>
+              <Text style={styles.avatarText}>{userInitials}</Text>
+            </View>
+          )}
           <View style={styles.profileInfo}>
             <Text style={[styles.userName, { color: colors.textPrimary }]}>
               {userName}
@@ -232,6 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   avatarText: {
     fontSize: 24,

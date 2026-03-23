@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Helper functions to load local images dynamically
+ * Helper functions to load images - supports both local and API URLs
  */
 
-// Map of course image URLs to their require() paths
+// Map of course image URLs to their require() paths (fallbacks for local assets)
 const courseImages: Record<string, any> = {
   'course-waste-sorting': require('@/assets/images/course-waste-sorting.png'),
   'course-recycling-safety': require('@/assets/images/course-recycling-safety.png'),
@@ -16,23 +16,24 @@ const sectionThumbnails: Record<string, any> = {
   'section-1-2': require('@/assets/images/section-1-2.png'),
 }
 
+const fallbackImage = require('@/assets/images/logo_black240.png')
+
 /**
- * Get course image source
- * @param imageUrl The course image identifier
- * @returns Image source for expo-image or fallback logo
+ * Get course image source - handles both API URLs and local asset keys
  */
 export const getCourseImage = (imageUrl: string) => {
-  return courseImages[imageUrl] || require('@/assets/images/logo_black240.png')
+  if (imageUrl.startsWith('http')) {
+    return { uri: imageUrl }
+  }
+  return courseImages[imageUrl] || fallbackImage
 }
 
 /**
- * Get section thumbnail source
- * @param thumbnailUrl The section thumbnail identifier
- * @returns Image source for expo-image or fallback logo
+ * Get section thumbnail source - handles both API URLs and local asset keys
  */
 export const getSectionThumbnail = (thumbnailUrl: string) => {
-  return (
-    sectionThumbnails[thumbnailUrl] ||
-    require('@/assets/images/logo_black240.png')
-  )
+  if (thumbnailUrl.startsWith('http')) {
+    return { uri: thumbnailUrl }
+  }
+  return sectionThumbnails[thumbnailUrl] || fallbackImage
 }

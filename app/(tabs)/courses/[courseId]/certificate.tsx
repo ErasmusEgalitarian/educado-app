@@ -9,7 +9,6 @@ import { t } from '@/i18n/config'
 import {
   getCertificate,
   getCourseProgress,
-  hasPassedCourse,
   saveCertificate as saveLocalCertificate,
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
@@ -33,7 +32,6 @@ export default function CertificateScreen() {
   const certificateRef = useRef<View>(null)
   const { currentLanguage } = useLanguage()
   const { user } = useAuth()
-  // Certificate is auto-created by backend on course completion
 
   const { data: course } = useCourse(courseId)
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Learner'
@@ -44,27 +42,6 @@ export default function CertificateScreen() {
 
   const loadCertificateData = useCallback(async () => {
     if (!course) return
-
-    // Check if user has actually passed
-    const passed = await hasPassedCourse(
-      courseId,
-      course.sections.length,
-      course.passingThreshold
-    )
-
-    if (!passed) {
-      Alert.alert(
-        'Certificate Not Available',
-        `You need to score at least ${course.passingThreshold}% to earn a certificate.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace(`/(tabs)/courses/${courseId}`),
-          },
-        ]
-      )
-      return
-    }
 
     const courseProgress = await getCourseProgress(courseId)
     const existingCertificate = await getCertificate(courseId)
@@ -85,14 +62,13 @@ export default function CertificateScreen() {
       setUserName(name)
       setCompletionDate(courseProgress.completedAt)
 
-      // Sync certificate to API (legacy endpoint for backwards compat)
       try {
         await apiCreateCertificate(newCertificate)
       } catch {
-        // Continue even if API call fails — backend may already have it
+        // Backend may already have it
       }
     }
-  }, [course, courseId, router, displayName])
+  }, [course, courseId, displayName])
 
   useEffect(() => {
     if (course) {
@@ -107,8 +83,8 @@ export default function CertificateScreen() {
       const { status } = await MediaLibrary.requestPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Please grant camera roll permissions to save the certificate.'
+          t('certificate.permissionRequired'),
+          t('certificate.permissionMessage')
         )
         setIsDownloading(false)
         return
@@ -124,18 +100,18 @@ export default function CertificateScreen() {
 
         await MediaLibrary.createAssetAsync(uri)
 
-        Alert.alert('Success!', 'Certificate saved to your photo gallery.', [
-          { text: 'OK' },
+        Alert.alert(t('certificate.success'), t('certificate.savedSuccess'), [
+          { text: t('common.ok') },
         ])
       } else {
-        Alert.alert('Error', 'Certificate view not ready. Please try again.', [
-          { text: 'OK' },
+        Alert.alert(t('common.error'), t('certificate.saveError'), [
+          { text: t('common.ok') },
         ])
       }
     } catch (error) {
       console.error('Error saving certificate:', error)
-      Alert.alert('Error', 'Failed to save certificate. Please try again.', [
-        { text: 'OK' },
+      Alert.alert(t('common.error'), t('certificate.saveError'), [
+        { text: t('common.ok') },
       ])
     } finally {
       setIsDownloading(false)
@@ -175,7 +151,7 @@ export default function CertificateScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          Your Certificate
+          {t('certificate.headerTitle')}
         </Text>
         <View style={styles.placeholder} />
       </View>
@@ -195,7 +171,7 @@ export default function CertificateScreen() {
             <Ionicons name="trophy" size={64} color={colors.textLight} />
           </View>
           <Text style={[styles.celebrationTitle, { color: colors.primary }]}>
-            Congratulations!
+            {t('certificate.congratulations')}
           </Text>
           <Text
             style={[
@@ -203,7 +179,7 @@ export default function CertificateScreen() {
               { color: colors.textSecondary },
             ]}
           >
-            You've successfully completed the course
+            {t('certificate.completedSubtitle')}
           </Text>
         </View>
 
@@ -224,7 +200,7 @@ export default function CertificateScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <ButtonPrimary
-            title="Download Certificate"
+            title={t('certificate.download')}
             onPress={handleDownload}
             icon="download"
             fullWidth
@@ -235,7 +211,7 @@ export default function CertificateScreen() {
           <View style={styles.actionSpacing} />
 
           <ButtonPrimary
-            title="Back to Courses"
+            title={t('certificate.backToCourses')}
             onPress={handleBackToCourses}
             icon="home"
             fullWidth
@@ -252,8 +228,7 @@ export default function CertificateScreen() {
         >
           <Ionicons name="sparkles" size={24} color={colors.primary} />
           <Text style={[styles.messageText, { color: colors.textSecondary }]}>
-            Keep learning! Check out more courses to continue your educational
-            journey.
+            {t('certificate.keepLearning')}
           </Text>
         </View>
       </ScrollView>
@@ -273,10 +248,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,

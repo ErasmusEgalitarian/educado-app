@@ -45,6 +45,7 @@ export function useEnroll() {
     mutationFn: (courseId: string) => apiEnroll(courseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] })
+      queryClient.invalidateQueries({ queryKey: ['catalog-courses'] })
     },
   })
 }
@@ -89,6 +90,7 @@ export function useSaveSectionProgress() {
         queryKey: ['enrollment-detail', variables.courseId],
       })
       queryClient.invalidateQueries({ queryKey: ['enrollments'] })
+      queryClient.invalidateQueries({ queryKey: ['gamification-summary'] })
     },
   })
 }
@@ -107,6 +109,7 @@ export function useCompleteCourse() {
       })
       queryClient.invalidateQueries({ queryKey: ['enrollments'] })
       queryClient.invalidateQueries({ queryKey: ['certificates'] })
+      queryClient.invalidateQueries({ queryKey: ['gamification-summary'] })
     },
   })
 }

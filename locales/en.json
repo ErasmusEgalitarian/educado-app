@@ -49,7 +49,10 @@
     "advanced": "Advanced",
     "enrollNow": "Enroll Now",
     "alreadyEnrolled": "Already Enrolled",
-    "viewCourse": "View Course"
+    "viewCourse": "View Course",
+    "enrolledCount": "{{count}} student(s) enrolled",
+    "enrolledCount_one": "{{count}} student enrolled",
+    "enrolledCount_other": "{{count}} students enrolled"
   },
   "profile": {
     "title": "Your Certificates",
@@ -70,7 +73,24 @@
     "certificates": "Certificates",
     "ranking": "Ranking",
     "download": "Download",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "viewCertificate": "View Certificate",
+    "completedAt": "Completed on {{date}}",
+    "editProfileTitle": "Edit Profile",
+    "changePhoto": "Change Photo",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully!",
+    "phone": "Phone",
+    "dateOfBirth": "Date of Birth",
+    "dateOfBirthPlaceholder": "MM/DD/YYYY"
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "monthly": "Monthly",
+    "yourPosition": "Your position",
+    "points": "{{count}} pts",
+    "noData": "No ranking data yet. Complete sections to appear here!",
+    "position": "{{position}}°"
   },
   "course": {
     "startCourse": "Start Course",
@@ -115,7 +135,35 @@
     "certifies": "This certifies that",
     "completed": "has successfully completed the course",
     "date": "Date of Completion",
-    "share": "Share Certificate"
+    "share": "Share Certificate",
+    "headerTitle": "Your Certificate",
+    "congratulations": "Congratulations!",
+    "completedSubtitle": "You've successfully completed the course",
+    "download": "Download Certificate",
+    "backToCourses": "Back to Courses",
+    "keepLearning": "Keep learning! Check out more courses to continue your educational journey.",
+    "permissionRequired": "Permission Required",
+    "permissionMessage": "Please grant camera roll permissions to save the certificate.",
+    "savedSuccess": "Certificate saved to your photo gallery.",
+    "saveError": "Failed to save certificate. Please try again.",
+    "success": "Success!"
+  },
+  "review": {
+    "title": "Rate This Course",
+    "subtitle": "Your feedback helps other students and course creators",
+    "ratingLabel": "How would you rate it?",
+    "tagsLabel": "What did you like most?",
+    "tagContent": "Content",
+    "tagTeacher": "Teaching",
+    "tagPractice": "Practice",
+    "tagMaterial": "Material",
+    "tagPace": "Pace",
+    "commentLabel": "Comment (optional)",
+    "commentPlaceholder": "Tell us more about your experience...",
+    "submit": "Submit Review",
+    "skip": "Skip",
+    "thankYou": "Thank you for your review!",
+    "alreadyReviewed": "You already reviewed this course"
   },
   "auth": {
     "welcomeTitle": "Welcome to Educado!",
@@ -153,10 +201,30 @@
     "serverError": "Server error. Please try again later",
     "networkError": "Unable to connect. Check your internet connection"
   },
+  "downloads": {
+    "title": "My Downloads",
+    "downloadCourse": "Download Course",
+    "downloading": "Downloading...",
+    "downloadComplete": "Downloaded",
+    "deleteDownload": "Delete Download",
+    "deleteConfirmTitle": "Delete Download?",
+    "deleteConfirmMessage": "This will remove the offline copy of this course. You can re-download it later.",
+    "noDownloads": "No downloaded courses yet. Download a course to access it offline.",
+    "downloadProgress": "{{percent}}% downloaded",
+    "downloadSuccess": "Course downloaded successfully!",
+    "downloadError": "Failed to download course. Please try again.",
+    "sections": "{{count}} sections"
+  },
   "errors": {
     "loadCourse": "Failed to load course",
     "loadSection": "Failed to load section",
     "loadCourses": "Failed to load courses",
     "generic": "Something went wrong"
+  },
+  "offline": {
+    "title": "No Connection",
+    "message": "You are offline. Access your downloaded courses to keep studying.",
+    "goToDownloads": "View My Downloads",
+    "retry": "Try Again"
   }
 }

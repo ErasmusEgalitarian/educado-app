@@ -88,6 +88,19 @@ const CourseDetailsBottomSheet = forwardRef<
                 {course.rating?.toFixed(1)}
               </Text>
             </View>
+
+            {course.enrollmentCount != null && course.enrollmentCount > 0 && (
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="people-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                  {t('explore.enrolledCount', { count: course.enrollmentCount })}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Course Description */}

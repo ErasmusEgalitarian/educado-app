@@ -1,16 +1,17 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { Course } from '@/data/mock-data'
-import { useAllCourses } from '@/hooks/useCourses'
+import { useGamificationSummary } from '@/hooks/useGamification'
 import { useEnrollments } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
+import { ApiEnrollment } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,58 +25,50 @@ export default function CoursesScreen() {
   const { currentLanguage } = useLanguage()
 
   const {
-    data: allCourses = [],
-    isLoading: coursesLoading,
-    refetch: refetchCourses,
-  } = useAllCourses()
-  const {
     data: enrollments = [],
-    isLoading: progressLoading,
+    isLoading,
+    error: enrollmentsError,
     refetch: refetchEnrollments,
   } = useEnrollments()
+
+  const {
+    data: gamification,
+    refetch: refetchGamification,
+  } = useGamificationSummary()
+
+  const [refreshing, setRefreshing] = useState(false)
 
   // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      refetchCourses()
       refetchEnrollments()
-    }, [refetchCourses, refetchEnrollments])
+      refetchGamification()
+    }, [refetchEnrollments, refetchGamification])
   )
 
-  // Compute enrolled courses and progress from enrollments
-  const { enrolledCourses, courseProgress } = useMemo(() => {
-    const activeEnrollments = enrollments.filter(
-      (e) => e.status === 'ACTIVE' || e.status === 'COMPLETED'
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([refetchEnrollments(), refetchGamification()])
+    setRefreshing(false)
+  }, [refetchEnrollments, refetchGamification])
+
+  // Filter active enrollments that have course data
+  const activeEnrollments = useMemo(() => {
+    return enrollments.filter(
+      (e) => (e.status === 'ACTIVE' || e.status === 'COMPLETED') && e.course
     )
-    const enrolledCourseIds = activeEnrollments.map((e) => e.courseId)
-    const enrolled = allCourses.filter((c) => enrolledCourseIds.includes(c.id))
-
-    const progress: Record<string, number> = {}
-    for (const e of activeEnrollments) {
-      progress[e.courseId] = e.progressPercent
-    }
-
-    return { enrolledCourses: enrolled, courseProgress: progress }
-  }, [allCourses, enrollments])
+  }, [enrollments])
 
   const handleCoursePress = (courseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     router.push(`/(tabs)/courses/${courseId}`)
   }
 
-  // Calculate total progress
-  const getTotalProgress = () => {
-    let completedSections = 0
-    let totalSections = 0
-    enrolledCourses.forEach((course: Course) => {
-      totalSections += course.sections.length
-      const progress = courseProgress[course.id] || 0
-      completedSections += Math.round((progress / 100) * course.sections.length)
-    })
-    return { completedSections, totalSections }
-  }
-
-  const isLoading = coursesLoading || progressLoading
+  const currentLevel = gamification?.currentLevel ?? 1
+  const levelName = gamification?.levelName ?? ''
+  const xpProgress = gamification?.xpProgress ?? 0
+  const xpNeeded = gamification?.xpNeeded ?? 1
+  const xpPercent = xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
 
   if (isLoading) {
     return (
@@ -91,13 +84,46 @@ export default function CoursesScreen() {
     )
   }
 
-  const { completedSections, totalSections } = getTotalProgress()
-  const levelProgress =
-    totalSections > 0 ? (completedSections / totalSections) * 100 : 0
-  const pointsToNextLevel = 10
+  // Offline state
+  if (enrollmentsError) {
+    return (
+      <View
+        key={currentLanguage}
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <Ionicons name="cloud-offline-outline" size={80} color={colors.textSecondary} />
+        <Text style={[styles.emptyStateText, { color: colors.textPrimary }]}>
+          {t('offline.title')}
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+          {t('offline.message')}
+        </Text>
+        <TouchableOpacity
+          style={[styles.exploreButton, { marginTop: 24 }]}
+          onPress={() => router.push('/(tabs)/downloads')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.exploreButtonText}>{t('offline.goToDownloads')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 12 }}
+          onPress={() => refetchEnrollments()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+            {t('offline.retry')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   // Show message if no enrolled courses
-  if (enrolledCourses.length === 0) {
+  if (activeEnrollments.length === 0) {
     return (
       <View
         key={currentLanguage}
@@ -110,6 +136,7 @@ export default function CoursesScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
@@ -175,6 +202,7 @@ export default function CoursesScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header with Logo and Welcome */}
         <View style={styles.header}>
@@ -195,38 +223,38 @@ export default function CoursesScreen() {
           style={[styles.levelCard, { backgroundColor: colors.cardBackground }]}
         >
           <Text style={[styles.levelTitle, { color: '#4A90A4' }]}>
-            {t('home.level', { level: 1 })}
+            {t('home.level', { level: currentLevel })}
+            {levelName ? ` — ${levelName}` : ''}
           </Text>
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBarBackground}>
               <View
-                style={[styles.progressBarFill, { width: `${levelProgress}%` }]}
+                style={[styles.progressBarFill, { width: `${xpPercent}%` }]}
               />
             </View>
           </View>
           <Text
             style={[styles.levelProgressText, { color: colors.textSecondary }]}
           >
-            {t('home.levelProgress', { points: pointsToNextLevel })}
+            {t('home.levelProgress', { points: xpNeeded - xpProgress })}
           </Text>
         </View>
 
         {/* Course Cards */}
-        {enrolledCourses.map((course: Course) => {
-          const progress = courseProgress[course.id] || 0
-          const completedCount = Math.round(
-            (progress / 100) * course.sections.length
-          )
-          const totalCount = course.sections.length
+        {activeEnrollments.map((enrollment: ApiEnrollment) => {
+          const course = enrollment.course!
+          const progress = enrollment.progressPercent
+          const completedCount = enrollment.completedSections
+          const totalCount = enrollment.totalSections
 
           return (
             <TouchableOpacity
-              key={course.id}
+              key={enrollment.id}
               style={[
                 styles.courseCard,
                 { backgroundColor: colors.cardBackground },
               ]}
-              onPress={() => handleCoursePress(course.id)}
+              onPress={() => handleCoursePress(enrollment.courseId)}
               activeOpacity={0.7}
             >
               <View style={styles.courseHeader}>
@@ -237,6 +265,7 @@ export default function CoursesScreen() {
                 />
                 <Text
                   style={[styles.courseTitle, { color: colors.textPrimary }]}
+                  numberOfLines={2}
                 >
                   {course.title}
                 </Text>
@@ -256,6 +285,7 @@ export default function CoursesScreen() {
                       styles.metadataText,
                       { color: colors.textSecondary },
                     ]}
+                    numberOfLines={2}
                   >
                     {course.shortDescription}
                   </Text>
@@ -388,6 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     flex: 1,
+    flexShrink: 1,
   },
   courseDivider: {
     height: 1,
@@ -405,6 +436,8 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     fontSize: 15,
+    flex: 1,
+    flexShrink: 1,
   },
   courseProgressContainer: {
     gap: 8,
