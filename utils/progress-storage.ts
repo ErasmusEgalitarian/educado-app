@@ -328,6 +328,21 @@ export const hasCertificate = async (courseId: string): Promise<boolean> => {
 }
 
 /**
+ * Clear progress for a specific course (used on unenroll)
+ */
+export const clearCourseProgress = async (courseId: string): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(getCourseProgressKey(courseId))
+    // Also remove certificate for this course
+    const certificates = await getCertificates()
+    const filtered = certificates.filter((c) => c.courseId !== courseId)
+    await AsyncStorage.setItem(CERTIFICATES_KEY, JSON.stringify(filtered))
+  } catch (error) {
+    console.error('Error clearing course progress:', error)
+  }
+}
+
+/**
  * Clear all progress (useful for testing)
  */
 export const clearAllProgress = async (): Promise<void> => {

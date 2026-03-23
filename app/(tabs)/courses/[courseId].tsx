@@ -1,10 +1,12 @@
 import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCourse } from '@/hooks/useCourses'
 import { useDownloadCourse, useIsDownloaded, useDeleteDownload } from '@/hooks/useDownloads'
-import { useEnrollmentDetail } from '@/hooks/useProgress'
+import { useEnrollmentDetail, useDropEnrollment } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
+import { clearCourseProgress } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
@@ -28,6 +30,7 @@ export default function CourseDetailScreen() {
   const colors = AppColors()
   const insets = useSafeAreaInsets()
   const { currentLanguage } = useLanguage()
+  const { token } = useAuth()
 
   const {
     data: course,
@@ -39,12 +42,16 @@ export default function CourseDetailScreen() {
   const { data: downloadManifest } = useIsDownloaded(courseId)
   const downloadMutation = useDownloadCourse()
   const deleteMutation = useDeleteDownload()
+  const dropEnrollmentMutation = useDropEnrollment()
   const isCourseDownloaded = downloadManifest?.status === 'complete'
   const progress = enrollmentDetail
     ? {
         sectionProgresses: enrollmentDetail.sections.map((s) => ({
           sectionId: s.id,
-          completedAt: s.status === 'completed' ? new Date().toISOString() : null,
+          completedAt:
+            s.status === 'completed' && s.score !== null
+              ? new Date().toISOString()
+              : null,
           id: s.id,
           courseProgressId: '',
         })),
@@ -137,9 +144,21 @@ export default function CourseDetailScreen() {
         {
           text: t('course.unenrollConfirm'),
           style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-            router.back()
+          onPress: async () => {
+            try {
+              await dropEnrollmentMutation.mutateAsync(courseId)
+              // Clear local progress and certificates to prevent XP re-farming
+              await clearCourseProgress(courseId)
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success
+              )
+              router.back()
+            } catch {
+              Alert.alert(
+                t('errors.generic'),
+                t('course.unenrollError')
+              )
+            }
           },
         },
       ]
@@ -177,9 +196,9 @@ export default function CourseDetailScreen() {
 
   const isStarted = completedSections.size > 0
 
-  // Course image: use API URL if it starts with http, otherwise use local image loader
+  // Course image: use API URL with auth headers if remote, otherwise fallback
   const courseImageSource = course.imageUrl.startsWith('http')
-    ? { uri: course.imageUrl }
+    ? { uri: course.imageUrl, headers: token ? { Authorization: `Bearer ${token}` } : undefined }
     : require('@/assets/images/logo_black240.png')
 
   return (

@@ -5,6 +5,7 @@ export interface Question {
   options: string[] // For multiple choice (empty for true/false)
   correctAnswer: number | boolean // index for multiple choice, boolean for true/false
   icon?: string // Icon name for visual aid
+  imageUrl?: string // URL for question image (from API media)
 }
 
 // New activity types for mixed interactive sections
@@ -29,6 +30,11 @@ export interface Activity {
   icon?: string
 }
 
+export interface VideoPauseQuestion {
+  pauseTimestamp: number
+  question: Question
+}
+
 export interface Section {
   id: string
   title: string
@@ -37,6 +43,8 @@ export interface Section {
   duration?: number // in seconds
   questions?: Question[] // legacy support - deprecated in favor of activities
   activities?: Activity[] // new mixed activity structure
+  textPages?: string[] // aggregated text pages from text_reading activities
+  videoPauseQuestions?: VideoPauseQuestion[] // questions that appear during video pauses
 }
 
 export interface Course {

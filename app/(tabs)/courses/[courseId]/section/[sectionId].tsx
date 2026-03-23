@@ -1,6 +1,8 @@
 import ButtonPrimary from '@/components/Common/ButtonPrimary'
 import QuestionCard from '@/components/Section/QuestionCard'
+import TextReadingCard from '@/components/Section/TextReadingCard'
 import VideoPlayer from '@/components/Section/VideoPlayer'
+import VideoPlayerWithPauses from '@/components/Section/VideoPlayerWithPauses'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useCourse } from '@/hooks/useCourses'
 import {
@@ -15,7 +17,7 @@ import {
 } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -25,7 +27,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-type Phase = 'video' | 'questions' | 'results'
+type Phase = 'text' | 'video' | 'questions' | 'results'
 
 export default function SectionScreen() {
   const { courseId, sectionId } = useLocalSearchParams<{
@@ -53,20 +55,62 @@ export default function SectionScreen() {
     return course.sections[currentIndex + 1]
   }, [course, sectionId])
 
-  const [phase, setPhase] = useState<Phase>('video')
+  const hasTextPages = Boolean(
+    section?.textPages && section.textPages.length > 0
+  )
+  const hasVideo = Boolean(section?.videoUrl)
+  const hasQuestions = Boolean(
+    section?.questions && section.questions.length > 0
+  )
+  const hasVideoPauseQuestions = Boolean(
+    section?.videoPauseQuestions && section.videoPauseQuestions.length > 0
+  )
+
+  // Determine initial phase
+  const getInitialPhase = (): Phase => {
+    if (hasTextPages) return 'text'
+    if (hasVideo) return 'video'
+    if (hasQuestions) return 'questions'
+    return 'results'
+  }
+
+  const [phase, setPhase] = useState<Phase>(getInitialPhase())
   const [videoWatchPercentage, setVideoWatchPercentage] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<
     Array<{ isCorrect: boolean; answer: number | boolean }>
   >([])
 
+  // Video pause state
+  const [isPausedForQuestion, setIsPausedForQuestion] = useState(false)
+  const [currentPauseQuestionIndex, setCurrentPauseQuestionIndex] = useState<
+    number | null
+  >(null)
+  const [pauseAnswers, setPauseAnswers] = useState<
+    Array<{ isCorrect: boolean; answer: number | boolean }>
+  >([])
+
   // Reset all state when sectionId changes
   useEffect(() => {
-    setPhase('video')
     setVideoWatchPercentage(0)
     setCurrentQuestionIndex(0)
     setAnswers([])
-  }, [sectionId])
+    setIsPausedForQuestion(false)
+    setCurrentPauseQuestionIndex(null)
+    setPauseAnswers([])
+    // Recalculate initial phase
+    const newHasText = Boolean(
+      section?.textPages && section.textPages.length > 0
+    )
+    const newHasVideo = Boolean(section?.videoUrl)
+    const newHasQuestions = Boolean(
+      section?.questions && section.questions.length > 0
+    )
+    if (newHasText) setPhase('text')
+    else if (newHasVideo) setPhase('video')
+    else if (newHasQuestions) setPhase('questions')
+    else setPhase('results')
+  }, [sectionId, section])
 
   if (!course || !section) {
     return (
@@ -83,24 +127,70 @@ export default function SectionScreen() {
     )
   }
 
+  const questions = section.questions ?? []
+  const videoPauseQuestions = section.videoPauseQuestions ?? []
+
+  // All questions combined for score calculation
+  const allQuestionsCount = questions.length + videoPauseQuestions.length
+  const allAnswers = [...pauseAnswers, ...answers]
+
+  const handleTextComplete = () => {
+    if (hasVideo) {
+      setPhase('video')
+    } else if (hasQuestions) {
+      setPhase('questions')
+    } else {
+      setPhase('results')
+    }
+  }
+
   const handleVideoProgress = (percentage: number) => {
     setVideoWatchPercentage(percentage)
   }
 
   const handleReadyToAnswer = () => {
-    if (section.questions.length === 0) {
-      // No questions — skip to completion
+    if (questions.length === 0) {
       setPhase('results')
       return
     }
     setPhase('questions')
   }
 
+  // Video pause handlers
+  const handlePauseReached = useCallback(
+    (timestamp: number) => {
+      const index = videoPauseQuestions.findIndex(
+        (vpq) => vpq.pauseTimestamp === timestamp
+      )
+      if (index !== -1) {
+        setCurrentPauseQuestionIndex(index)
+        setIsPausedForQuestion(true)
+      }
+    },
+    [videoPauseQuestions]
+  )
+
+  const handlePauseQuestionAnswer = (
+    isCorrect: boolean,
+    answer: number | boolean
+  ) => {
+    setPauseAnswers((prev) => [...prev, { isCorrect, answer }])
+    // Resume video after a short delay
+    setTimeout(() => {
+      setIsPausedForQuestion(false)
+      setCurrentPauseQuestionIndex(null)
+    }, 1500)
+  }
+
+  const handleVideoComplete = useCallback(() => {
+    setVideoWatchPercentage(100)
+  }, [])
+
   const handleAnswer = (isCorrect: boolean, answer: number | boolean) => {
     const newAnswers = [...answers, { isCorrect, answer }]
     setAnswers(newAnswers)
 
-    if (currentQuestionIndex < section.questions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
       }, 1500)
@@ -112,8 +202,8 @@ export default function SectionScreen() {
   }
 
   const handleCompleteSection = async () => {
-    const correctAnswers = answers.filter((a) => a.isCorrect).length
-    const totalQuestions = section.questions.length
+    const correctAnswers = allAnswers.filter((a) => a.isCorrect).length
+    const totalQuestions = allQuestionsCount
 
     // Save progress locally (for score tracking)
     await saveLocalSectionProgress(
@@ -165,10 +255,10 @@ export default function SectionScreen() {
     }
   }
 
-  const correctAnswersCount = answers.filter((a) => a.isCorrect).length
+  const correctAnswersCount = allAnswers.filter((a) => a.isCorrect).length
   const scorePercentage =
-    section.questions.length > 0
-      ? Math.round((correctAnswersCount / section.questions.length) * 100)
+    allQuestionsCount > 0
+      ? Math.round((correctAnswersCount / allQuestionsCount) * 100)
       : 100
 
   return (
@@ -193,79 +283,137 @@ export default function SectionScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Content */}
+      {/* Text Reading Phase */}
+      {phase === 'text' && section.textPages && (
+        <TextReadingCard
+          textPages={section.textPages}
+          courseTitle={course.title}
+          sectionTitle={section.title}
+          onComplete={handleTextComplete}
+        />
+      )}
+
+      {/* Video Phase */}
       {phase === 'video' && (
         <>
           <ScrollView
             style={styles.videoContent}
             showsVerticalScrollIndicator={false}
           >
-            <VideoPlayer
-              key={sectionId}
-              videoUrl={section.videoUrl}
-              onProgressUpdate={handleVideoProgress}
-              minimumWatchPercentage={80}
-            />
-
-            <View style={styles.videoInfo}>
-              <Text
-                style={[styles.sectionTitle, { color: colors.textPrimary }]}
-              >
-                {section.title}
-              </Text>
-              <Text
-                style={[
-                  styles.sectionDescription,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                Watch the video to learn about this topic. You'll need to watch
-                at least 80% before answering questions.
-              </Text>
-
-              <View style={styles.questionsInfo}>
-                <Ionicons
-                  name="help-circle-outline"
-                  size={20}
-                  color={colors.primary}
+            {hasVideoPauseQuestions ? (
+              <>
+                <VideoPlayerWithPauses
+                  key={sectionId}
+                  videoUrl={section.videoUrl ?? ''}
+                  pauseTimestamps={videoPauseQuestions.map(
+                    (vpq) => vpq.pauseTimestamp
+                  )}
+                  onPauseReached={handlePauseReached}
+                  isPaused={isPausedForQuestion}
+                  onResume={() => setIsPausedForQuestion(false)}
+                  onVideoComplete={handleVideoComplete}
                 />
+
+                {/* Show question card overlay when paused */}
+                {isPausedForQuestion && currentPauseQuestionIndex !== null && (
+                  <View style={styles.pauseQuestionContainer}>
+                    <QuestionCard
+                      question={
+                        videoPauseQuestions[currentPauseQuestionIndex].question
+                      }
+                      onAnswer={handlePauseQuestionAnswer}
+                      currentQuestion={currentPauseQuestionIndex + 1}
+                      totalQuestions={videoPauseQuestions.length}
+                    />
+                  </View>
+                )}
+              </>
+            ) : (
+              <VideoPlayer
+                key={sectionId}
+                videoUrl={section.videoUrl ?? ''}
+                onProgressUpdate={handleVideoProgress}
+                minimumWatchPercentage={80}
+              />
+            )}
+
+            {!isPausedForQuestion && (
+              <View style={styles.videoInfo}>
+                <Text
+                  style={[styles.sectionTitle, { color: colors.textPrimary }]}
+                >
+                  {section.title}
+                </Text>
                 <Text
                   style={[
-                    styles.questionsText,
+                    styles.sectionDescription,
                     { color: colors.textSecondary },
                   ]}
                 >
-                  {section.questions.length} questions to answer after video
+                  {t('section.videoDescription')}
                 </Text>
+
+                {(questions.length > 0 || videoPauseQuestions.length > 0) && (
+                  <View style={styles.questionsInfo}>
+                    <Ionicons
+                      name="help-circle-outline"
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.questionsText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t('section.questionsToAnswer', {
+                        count: allQuestionsCount,
+                      })}
+                    </Text>
+                  </View>
+                )}
               </View>
-            </View>
+            )}
           </ScrollView>
 
-          <View
-            style={[
-              styles.footer,
-              {
-                backgroundColor: colors.cardBackground,
-                paddingBottom: Math.max(insets.bottom, 24),
-              },
-            ]}
-          >
-            <ButtonPrimary
-              title={t('course.readyToAnswer')}
-              onPress={handleReadyToAnswer}
-              icon="checkmark"
-              fullWidth
-              disabled={videoWatchPercentage < 80}
-            />
-            {videoWatchPercentage < 80 && (
-              <Text style={[styles.watchHint, { color: colors.textSecondary }]}>
-                Watch {Math.round(80 - videoWatchPercentage)}% more to continue
-              </Text>
-            )}
-          </View>
+          {!isPausedForQuestion && (
+            <View
+              style={[
+                styles.footer,
+                {
+                  backgroundColor: colors.cardBackground,
+                  paddingBottom: Math.max(insets.bottom, 24),
+                },
+              ]}
+            >
+              <ButtonPrimary
+                title={t('course.readyToAnswer')}
+                onPress={handleReadyToAnswer}
+                icon="checkmark"
+                fullWidth
+                disabled={
+                  hasVideoPauseQuestions
+                    ? videoWatchPercentage < 100
+                    : videoWatchPercentage < 80
+                }
+              />
+              {videoWatchPercentage < (hasVideoPauseQuestions ? 100 : 80) && (
+                <Text
+                  style={[styles.watchHint, { color: colors.textSecondary }]}
+                >
+                  {t('section.watchMore', {
+                    percent: Math.round(
+                      (hasVideoPauseQuestions ? 100 : 80) - videoWatchPercentage
+                    ),
+                  })}
+                </Text>
+              )}
+            </View>
+          )}
         </>
       )}
 
+      {/* Questions Phase */}
       {phase === 'questions' && (
         <View style={styles.questionsContainer}>
           <ScrollView
@@ -274,15 +422,16 @@ export default function SectionScreen() {
             showsVerticalScrollIndicator={false}
           >
             <QuestionCard
-              question={section.questions[currentQuestionIndex]}
+              question={questions[currentQuestionIndex]}
               onAnswer={handleAnswer}
               currentQuestion={currentQuestionIndex + 1}
-              totalQuestions={section.questions.length}
+              totalQuestions={questions.length}
             />
           </ScrollView>
         </View>
       )}
 
+      {/* Results Phase */}
       {phase === 'results' && (
         <>
           <ScrollView
@@ -303,20 +452,69 @@ export default function SectionScreen() {
             </View>
 
             <Text style={[styles.resultsTitle, { color: colors.textPrimary }]}>
-              {scorePercentage >= 70 ? 'Great Job!' : 'Good Effort!'}
+              {scorePercentage >= 70
+                ? t('results.greatJob')
+                : t('results.goodEffort')}
             </Text>
 
             <Text
               style={[styles.resultsSubtitle, { color: colors.textSecondary }]}
             >
-              You answered {correctAnswersCount} out of{' '}
-              {section.questions.length} questions correctly
+              {t('section.answeredCorrectly', {
+                correct: correctAnswersCount,
+                total: allQuestionsCount,
+              })}
             </Text>
 
             <View style={styles.resultsDetails}>
-              {section.questions.map((question, index) => {
+              {/* Video pause questions results */}
+              {videoPauseQuestions.map((vpq, index) => {
+                const userAnswer = pauseAnswers[index]
+                const isCorrect = userAnswer?.isCorrect
+
+                return (
+                  <View
+                    key={vpq.question.id}
+                    style={[
+                      styles.resultItem,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={styles.resultHeader}>
+                      <Text
+                        style={[
+                          styles.resultQuestionNumber,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t('section.questionNumber', { index: index + 1 })}
+                      </Text>
+                      <Ionicons
+                        name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+                        size={24}
+                        color={isCorrect ? colors.success : colors.error}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.resultQuestion,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
+                      {vpq.question.question}
+                    </Text>
+                  </View>
+                )
+              })}
+
+              {/* Regular questions results */}
+              {questions.map((question, index) => {
                 const userAnswer = answers[index]
                 const isCorrect = userAnswer?.isCorrect
+                const globalIndex = videoPauseQuestions.length + index
 
                 return (
                   <View
@@ -336,7 +534,9 @@ export default function SectionScreen() {
                           { color: colors.textSecondary },
                         ]}
                       >
-                        Question {index + 1}
+                        {t('section.questionNumber', {
+                          index: globalIndex + 1,
+                        })}
                       </Text>
                       <Ionicons
                         name={isCorrect ? 'checkmark-circle' : 'close-circle'}
@@ -368,7 +568,7 @@ export default function SectionScreen() {
             ]}
           >
             <ButtonPrimary
-              title="Continue"
+              title={t('common.continue')}
               onPress={handleCompleteSection}
               icon="arrow-forward"
               fullWidth
@@ -460,6 +660,9 @@ const styles = StyleSheet.create({
   watchHint: {
     textAlign: 'center',
     fontSize: 14,
+    marginTop: 8,
+  },
+  pauseQuestionContainer: {
     marginTop: 8,
   },
   questionsContainer: {

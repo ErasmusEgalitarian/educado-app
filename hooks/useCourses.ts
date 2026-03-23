@@ -1,5 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext'
-import { Course, Question, Section } from '@/data/mock-data'
+import { Course, Question, Section, VideoPauseQuestion } from '@/data/mock-data'
 import {
   ApiActivity,
   ApiCourse,
@@ -16,44 +15,106 @@ import {
 } from '@/services/download-manager'
 import { useQuery } from '@tanstack/react-query'
 
+// Detect effective question type for an activity (video_pause can be either MC or TF)
+function getEffectiveQuestionType(
+  activity: ApiActivity
+): 'multiple_choice' | 'true_false' {
+  if (activity.type === 'multiple_choice') return 'multiple_choice'
+  if (activity.type === 'true_false') return 'true_false'
+  // video_pause: detect from data
+  if (activity.options && activity.options.length > 0) return 'multiple_choice'
+  return 'true_false'
+}
+
+// Coerce correctAnswer from API (may arrive as string "true"/"false" from JSON)
+function coerceCorrectAnswer(
+  value: number | boolean | null,
+  effectiveType: 'multiple_choice' | 'true_false'
+): number | boolean {
+  if (effectiveType === 'true_false') {
+    if (typeof value === 'string') return value === 'true'
+    if (typeof value === 'boolean') return value
+    return Boolean(value ?? false)
+  }
+  return Number(value) || 0
+}
+
 // Transform API activity → app Question
 function transformActivity(activity: ApiActivity): Question {
+  const effectiveType = getEffectiveQuestionType(activity)
   return {
     id: activity.id,
-    type: activity.type as 'multiple_choice' | 'true_false',
+    type: effectiveType,
     question: activity.question || '',
     options: activity.options || [],
-    correctAnswer: activity.correctAnswer as number | boolean,
+    correctAnswer: coerceCorrectAnswer(
+      activity.correctAnswer ?? null,
+      effectiveType
+    ),
     icon: activity.icon || undefined,
+    imageUrl: activity.imageMediaId
+      ? getImageUrl(activity.imageMediaId)
+      : undefined,
   }
 }
 
+// Check if an activity is a question (MC, TF, or video_pause final question without timestamp)
+function isRegularQuestion(a: ApiActivity): boolean {
+  if (a.type === 'multiple_choice' || a.type === 'true_false') return true
+  // video_pause without pauseTimestamp = "final question" shown after video
+  if (a.type === 'video_pause' && a.pauseTimestamp == null && a.question != null) return true
+  return false
+}
+
 // Transform API section → app Section
-function transformSection(section: ApiSection, token?: string): Section {
-  const questions = (section.activities || [])
-    .filter((a) => a.type === 'multiple_choice' || a.type === 'true_false')
-    .sort((a, b) => a.order - b.order)
+function transformSection(section: ApiSection): Section {
+  const sorted = (section.activities || []).sort((a, b) => a.order - b.order)
+
+  // Regular questions: MC, TF, and video_pause "final questions" (no timestamp)
+  const questions = sorted
+    .filter(isRegularQuestion)
     .map(transformActivity)
+
+  // Aggregate text pages from text_reading activities (in order)
+  const textPages = sorted
+    .filter((a) => a.type === 'text_reading' && a.textPages)
+    .flatMap((a) => a.textPages!)
+
+  // Video pause questions: only those WITH a specific timestamp
+  const videoPauseQuestions: VideoPauseQuestion[] = sorted
+    .filter(
+      (a) =>
+        a.type === 'video_pause' &&
+        a.pauseTimestamp != null &&
+        a.question != null
+    )
+    .map((a) => ({
+      pauseTimestamp: a.pauseTimestamp!,
+      question: transformActivity(a),
+    }))
 
   return {
     id: section.id,
     title: section.title,
     videoUrl: section.videoMediaId
-      ? getVideoStreamUrl(section.videoMediaId, token || undefined)
+      ? getVideoStreamUrl(section.videoMediaId)
       : '',
     thumbnailUrl: section.thumbnailMediaId
-      ? getImageUrl(section.thumbnailMediaId, token || undefined)
+      ? getImageUrl(section.thumbnailMediaId)
       : '',
     duration: section.duration || 0,
     questions,
+    textPages: textPages.length > 0 ? textPages : undefined,
+    videoPauseQuestions:
+      videoPauseQuestions.length > 0 ? videoPauseQuestions : undefined,
   }
 }
 
 // Transform API course → app Course
-function transformCourse(apiCourse: ApiCourse, token?: string): Course {
+function transformCourse(apiCourse: ApiCourse): Course {
   const sections = (apiCourse.sections || [])
     .sort((a, b) => a.order - b.order)
-    .map((s) => transformSection(s, token))
+    .map((s) => transformSection(s))
 
   return {
     id: apiCourse.id,
@@ -61,7 +122,7 @@ function transformCourse(apiCourse: ApiCourse, token?: string): Course {
     description: apiCourse.description,
     shortDescription: apiCourse.shortDescription,
     imageUrl: apiCourse.imageMediaId
-      ? getImageUrl(apiCourse.imageMediaId, token || undefined)
+      ? getImageUrl(apiCourse.imageMediaId)
       : '',
     sections,
     difficulty: apiCourse.difficulty,
@@ -82,15 +143,11 @@ function transformCourse(apiCourse: ApiCourse, token?: string): Course {
  * This works for both authenticated students and unauthenticated users.
  */
 export function useAllCourses(params?: Record<string, string>) {
-  const { token } = useAuth()
-
   return useQuery<Course[]>({
     queryKey: ['catalog-courses', params],
     queryFn: async () => {
       const response = await apiGetCatalogCourses(params)
-      return response.items.map((c) =>
-        transformCourse(c, token || undefined)
-      )
+      return response.items.map((c) => transformCourse(c))
     },
   })
 }
@@ -100,10 +157,27 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
   const sections = (apiCourse.sections || [])
     .sort((a, b) => a.order - b.order)
     .map((section): Section => {
-      const questions = (section.activities || [])
-        .filter((a) => a.type === 'multiple_choice' || a.type === 'true_false')
-        .sort((a, b) => a.order - b.order)
+      const sorted = (section.activities || []).sort((a, b) => a.order - b.order)
+
+      const questions = sorted
+        .filter(isRegularQuestion)
         .map(transformActivity)
+
+      const textPages = sorted
+        .filter((a) => a.type === 'text_reading' && a.textPages)
+        .flatMap((a) => a.textPages!)
+
+      const videoPauseQuestions: VideoPauseQuestion[] = sorted
+        .filter(
+          (a) =>
+            a.type === 'video_pause' &&
+            a.pauseTimestamp != null &&
+            a.question != null
+        )
+        .map((a) => ({
+          pauseTimestamp: a.pauseTimestamp!,
+          question: transformActivity(a),
+        }))
 
       return {
         id: section.id,
@@ -116,6 +190,9 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
           : '',
         duration: section.duration || 0,
         questions,
+        textPages: textPages.length > 0 ? textPages : undefined,
+        videoPauseQuestions:
+          videoPauseQuestions.length > 0 ? videoPauseQuestions : undefined,
       }
     })
 
@@ -146,14 +223,12 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
  * Falls back to offline cached data if API fails.
  */
 export function useCourse(courseId: string) {
-  const { token } = useAuth()
-
   return useQuery<Course | undefined>({
     queryKey: ['catalog-course', courseId],
     queryFn: async () => {
       try {
         const apiCourse = await apiGetCatalogCourseDetail(courseId)
-        return transformCourse(apiCourse, token || undefined)
+        return transformCourse(apiCourse)
       } catch {
         // Fallback to offline data
         const offlineCourse = await getOfflineCourse(courseId)

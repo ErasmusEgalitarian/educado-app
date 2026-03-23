@@ -108,8 +108,9 @@
     "percentCompleted": "{{percent}}% concluído",
     "unenrollCourse": "Retirar curso",
     "unenrollConfirmTitle": "Desinscrever do Curso?",
-    "unenrollConfirmMessage": "Tem certeza de que deseja se desinscrever deste curso? Seu progresso será salvo.",
+    "unenrollConfirmMessage": "Tem certeza de que deseja se desinscrever deste curso? Seu progresso e certificados serão removidos.",
     "unenrollConfirm": "Desinscrever",
+    "unenrollError": "Falha ao desinscrever. Tente novamente.",
     "cancel": "Cancelar"
   },
   "section": {
@@ -120,7 +121,15 @@
     "checkAnswer": "Verificar Resposta",
     "nextQuestion": "Próxima Questão",
     "viewResults": "Ver Resultados",
-    "noVideo": "Esta seção possui apenas conteúdo textual. Prossiga para as questões abaixo."
+    "noVideo": "Esta seção possui apenas conteúdo textual. Prossiga para as questões abaixo.",
+    "videoDescription": "Assista ao vídeo para aprender sobre este tópico. Você precisa assistir pelo menos 80% antes de responder as questões.",
+    "questionsToAnswer": "{{count}} questões para responder após o vídeo",
+    "watchMore": "Assista mais {{percent}}% para continuar",
+    "questionNumber": "Questão {{index}}",
+    "answeredCorrectly": "Você acertou {{correct}} de {{total}} questões",
+    "courseName": "Curso: {{name}}",
+    "completeAndContinue": "Concluir e Continuar",
+    "readAllPages": "Leia todas as páginas para continuar"
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",

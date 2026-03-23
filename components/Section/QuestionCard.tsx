@@ -1,10 +1,12 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { Question } from '@/data/mock-data'
-import { imageLoader } from '@/utils/image-loader'
+import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
+import { Image as ExpoImage } from 'expo-image'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import ButtonPrimary from '../Common/ButtonPrimary'
 
 interface QuestionCardProps {
@@ -13,7 +15,6 @@ interface QuestionCardProps {
   showResult?: boolean
   currentQuestion: number
   totalQuestions: number
-  imageUrl?: string // Optional image asset name (without extension)
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -21,9 +22,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer,
   currentQuestion,
   totalQuestions,
-  imageUrl,
 }) => {
   const colors = AppColors()
+  const { token } = useAuth()
   const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(
     null
   )
@@ -153,11 +154,24 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     return null
   }
 
+  // Build image source with auth headers for API images
+  const imageSource = question.imageUrl
+    ? question.imageUrl.startsWith('http')
+      ? {
+          uri: question.imageUrl,
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }
+      : undefined
+    : undefined
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.questionNumber, { color: colors.textSecondary }]}>
-          Question {currentQuestion} of {totalQuestions}
+          {t('section.question', {
+            current: currentQuestion,
+            total: totalQuestions,
+          })}
         </Text>
         {question.icon && (
           <Ionicons
@@ -168,13 +182,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </View>
 
-      {/* Optional Image */}
-      {imageUrl && (
+      {/* Question Image */}
+      {imageSource && (
         <View style={styles.imageContainer}>
-          <Image
-            source={imageLoader(imageUrl)}
+          <ExpoImage
+            source={imageSource}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
           />
         </View>
       )}
@@ -212,7 +226,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   size={28}
                   color={hasSubmitted ? colors.textLight : colors.success}
                 />
-                <Text style={getButtonTextStyle(true)}>True</Text>
+                <Text style={getButtonTextStyle(true)}>
+                  {t('section.true')}
+                </Text>
                 {getAnswerIcon(true)}
               </View>
             </TouchableOpacity>
@@ -229,7 +245,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   size={28}
                   color={hasSubmitted ? colors.textLight : colors.error}
                 />
-                <Text style={getButtonTextStyle(false)}>False</Text>
+                <Text style={getButtonTextStyle(false)}>
+                  {t('section.false')}
+                </Text>
                 {getAnswerIcon(false)}
               </View>
             </TouchableOpacity>
@@ -265,7 +283,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Continue Button */}
       <View style={styles.continueContainer}>
         <ButtonPrimary
-          title="Continue"
+          title={t('common.continue')}
           onPress={handleContinue}
           icon="arrow-forward"
           disabled={selectedAnswer === null || hasSubmitted}
