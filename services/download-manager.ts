@@ -60,9 +60,9 @@ async function removeManifest(courseId: string) {
 // File download helpers
 // ============================================================
 
-function getMediaUrl(mediaId: string, token: string): string {
+function getMediaUrl(mediaId: string): string {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL
-  return `${apiUrl}/media/${mediaId}/stream?token=${token}`
+  return `${apiUrl}/media/${mediaId}/stream`
 }
 
 function getLocalPath(courseId: string, mediaId: string, ext: string): string {
@@ -78,10 +78,11 @@ async function ensureDir(path: string) {
 
 async function downloadFile(
   url: string,
-  localUri: string
+  localUri: string,
+  headers?: Record<string, string>
 ): Promise<boolean> {
   try {
-    const result = await FileSystem.downloadAsync(url, localUri)
+    const result = await FileSystem.downloadAsync(url, localUri, { headers })
     return result.status === 200
   } catch {
     return false
@@ -149,8 +150,9 @@ export async function downloadCourse(
       currentFile: mediaId,
     })
 
-    const url = getMediaUrl(mediaId, token)
-    const success = await downloadFile(url, localUri)
+    const url = getMediaUrl(mediaId)
+    const authHeaders = { Authorization: `Bearer ${token}` }
+    const success = await downloadFile(url, localUri, authHeaders)
 
     if (success) {
       manifest.files.push({ mediaId, localUri, type })

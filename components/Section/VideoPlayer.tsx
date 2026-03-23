@@ -1,8 +1,10 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { t } from '@/i18n/config'
+import { getAuthHeaders } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 
 interface VideoPlayerProps {
@@ -19,6 +21,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   minimumWatchPercentage = 80,
 }) => {
   const colors = AppColors()
+  const { token } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasCompletedMinimum, setHasCompletedMinimum] = useState(false)
@@ -26,7 +29,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // If no video URL, show placeholder and auto-complete
   const hasVideo = !!videoUrl && videoUrl.length > 0
 
-  const player = useVideoPlayer(hasVideo ? videoUrl : null, (p) => {
+  // Build video source with Authorization header for remote URLs
+  const videoSource = useMemo(() => {
+    if (!hasVideo) return null
+    if (videoUrl.startsWith('http')) {
+      return { uri: videoUrl, headers: getAuthHeaders(token) }
+    }
+    return videoUrl
+  }, [hasVideo, videoUrl, token])
+
+  const player = useVideoPlayer(videoSource, (p) => {
     if (hasVideo) {
       p.loop = false
       p.play()

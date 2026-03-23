@@ -1,6 +1,8 @@
 import { AppColors } from '@/constants/theme/AppColors'
+import { useAuth } from '@/contexts/AuthContext'
 import { Course } from '@/data/mock-data'
 import { t } from '@/i18n/config'
+import { getAuthHeaders } from '@/services/api'
 import { getCourseImage } from '@/utils/image-loader'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -21,6 +23,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   progress = 0,
 }) => {
   const colors = AppColors()
+  const { token } = useAuth()
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -48,7 +51,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
     >
       <View style={styles.imageContainer}>
         <Image
-          source={getCourseImage(course.imageUrl)}
+          source={getCourseImage(course.imageUrl, getAuthHeaders(token))}
           style={styles.image}
           contentFit="cover"
         />

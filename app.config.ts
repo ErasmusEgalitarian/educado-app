@@ -17,11 +17,6 @@ export default {
         projectId: "d286ed3c-ebc2-4462-83d1-447c2a59fb4b",
       }
     },
-    ios: {
-      name: 'Educado',
-      supportsTablet: true,
-      bundleIdentifier: 'com.educado2.app',
-    },
     android: {
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
@@ -33,6 +28,8 @@ export default {
     plugins: [
       'expo-router',
       'expo-video',
+      'expo-secure-store',
+      './plugins/withAndroidSecurity',
       [
         'expo-media-library',
         {

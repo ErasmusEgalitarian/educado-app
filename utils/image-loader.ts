@@ -19,21 +19,29 @@ const sectionThumbnails: Record<string, any> = {
 const fallbackImage = require('@/assets/images/logo_black240.png')
 
 /**
- * Get course image source - handles both API URLs and local asset keys
+ * Get course image source - handles both API URLs and local asset keys.
+ * Pass authHeaders for authenticated media endpoints.
  */
-export const getCourseImage = (imageUrl: string) => {
+export const getCourseImage = (
+  imageUrl: string,
+  authHeaders?: Record<string, string>
+) => {
   if (imageUrl.startsWith('http')) {
-    return { uri: imageUrl }
+    return { uri: imageUrl, headers: authHeaders }
   }
   return courseImages[imageUrl] || fallbackImage
 }
 
 /**
- * Get section thumbnail source - handles both API URLs and local asset keys
+ * Get section thumbnail source - handles both API URLs and local asset keys.
+ * Pass authHeaders for authenticated media endpoints.
  */
-export const getSectionThumbnail = (thumbnailUrl: string) => {
+export const getSectionThumbnail = (
+  thumbnailUrl: string,
+  authHeaders?: Record<string, string>
+) => {
   if (thumbnailUrl.startsWith('http')) {
-    return { uri: thumbnailUrl }
+    return { uri: thumbnailUrl, headers: authHeaders }
   }
   return sectionThumbnails[thumbnailUrl] || fallbackImage
 }
