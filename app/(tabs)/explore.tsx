@@ -2,17 +2,19 @@ import CourseDetailsBottomSheet from '@/components/Explore/CourseDetailsBottomSh
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Course } from '@/data/mock-data'
-import { useCourses } from '@/hooks/api/useCourses'
+import { useAllCourses } from '@/hooks/useCourses'
+import { useEnrollments, useEnroll } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { enrollInCourse, isEnrolledInCourse } from '@/utils/enrollment-storage'
 import { Ionicons } from '@expo/vector-icons'
 import BottomSheet from '@gorhom/bottom-sheet'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,44 +30,35 @@ export default function ExploreScreen() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [enrolledCourses, setEnrolledCourses] = useState<string[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const bottomSheetRef = useRef<BottomSheet>(null)
 
-  // Fetch courses from API
-  const { data: courses, isLoading, error, refetch } = useCourses()
+  const { data: courses = [], isLoading, error, refetch: refetchCourses } = useAllCourses()
+  const { data: enrollments = [], refetch: refetchEnrollments } = useEnrollments()
+  const enrollMutation = useEnroll()
+  const [refreshing, setRefreshing] = useState(false)
 
-  const categories = [
-    { id: 'all', label: t('explore.all') },
-    { id: 'finance', label: t('explore.finance') },
-    { id: 'arts', label: t('explore.arts') },
-    { id: 'history', label: t('explore.history') },
-    { id: 'science', label: t('explore.science') },
-  ]
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([refetchCourses(), refetchEnrollments()])
+    setRefreshing(false)
+  }, [refetchCourses, refetchEnrollments])
 
-  const loadEnrollments = useCallback(async () => {
-    if (!courses) return
-    const enrolled: string[] = []
+  const enrolledCourseIds = enrollments.map((e) => e.courseId)
+
+  const categories = useMemo(() => {
+    const countMap: Record<string, number> = {}
     for (const course of courses) {
-      const isEnrolled = await isEnrolledInCourse(course.id)
-      if (isEnrolled) {
-        enrolled.push(course.id)
+      if (course.category) {
+        countMap[course.category] = (countMap[course.category] || 0) + 1
       }
     }
-    setEnrolledCourses(enrolled)
+    const sorted = Object.entries(countMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id]) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }))
+    return [{ id: 'all', label: t('explore.all') }, ...sorted]
   }, [courses])
-
-  useEffect(() => {
-    if (courses) {
-      loadEnrollments()
-    }
-  }, [courses, loadEnrollments])
-
-  useEffect(() => {
-    if (selectedCourse) {
-      bottomSheetRef.current?.expand()
-    }
-  }, [selectedCourse])
 
   const handleCategoryPress = (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -75,18 +68,20 @@ export default function ExploreScreen() {
   const handleCoursePress = (course: Course) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelectedCourse(course)
+    bottomSheetRef.current?.expand()
   }
 
   const handleEnroll = async () => {
     if (!selectedCourse) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-    await enrollInCourse(selectedCourse.id)
-    setEnrolledCourses([...enrolledCourses, selectedCourse.id])
-
-    // Close bottom sheet and navigate to course
-    bottomSheetRef.current?.close()
-    router.push(`/(tabs)/courses/${selectedCourse.id}`)
+    try {
+      await enrollMutation.mutateAsync(selectedCourse.id)
+      bottomSheetRef.current?.close()
+      router.push(`/(tabs)/courses/${selectedCourse.id}`)
+    } catch {
+      Alert.alert(t('common.error'), t('errors.generic'))
+    }
   }
 
   const handleViewCourse = () => {
@@ -97,14 +92,7 @@ export default function ExploreScreen() {
     router.push(`/(tabs)/courses/${selectedCourse.id}`)
   }
 
-  const handleBottomSheetChange = (index: number) => {
-    // When bottom sheet is fully closed (index -1), reset selected course
-    if (index === -1) {
-      setSelectedCourse(null)
-    }
-  }
-
-  const filteredCourses = (courses || []).filter((course) => {
+  const filteredCourses = courses.filter((course) => {
     const matchesSearch = course.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
@@ -112,6 +100,62 @@ export default function ExploreScreen() {
       selectedCategory === 'all' || course.category === selectedCategory
     return matchesSearch && matchesCategory
   })
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
+        <Ionicons
+          name="cloud-offline-outline"
+          size={80}
+          color={colors.textSecondary}
+        />
+        <Text style={[styles.errorText, { color: colors.textPrimary, marginTop: 16 }]}>
+          {t('offline.title')}
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+          {t('offline.message')}
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 24 }}
+          onPress={() => router.push('/(tabs)/downloads')}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
+            {t('offline.goToDownloads')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 12 }}
+          onPress={() => refetchCourses()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+            {t('offline.retry')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -126,6 +170,7 @@ export default function ExploreScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* Header with Logo */}
           <View style={styles.header}>
@@ -196,121 +241,106 @@ export default function ExploreScreen() {
             })}
           </ScrollView>
 
-          {/* Loading State */}
-          {isLoading && (
-            <View style={styles.centerContainer}>
-              <ActivityIndicator size="large" color="#4A90A4" />
-              <Text
-                style={[styles.loadingText, { color: colors.textSecondary }]}
-              >
-                {t('explore.loading') || 'Loading courses...'}
-              </Text>
-            </View>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <View style={styles.centerContainer}>
-              <Ionicons name="alert-circle" size={64} color="#EF4444" />
-              <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-                {t('explore.error') || 'Failed to load courses'}
-              </Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => refetch()}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.retryButtonText}>
-                  {t('explore.retry') || 'Retry'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* Course Cards */}
-          {!isLoading &&
-            !error &&
-            filteredCourses.map((course) => (
-              <TouchableOpacity
-                key={course.id}
-                style={[
-                  styles.courseCard,
-                  { backgroundColor: colors.cardBackground },
-                ]}
-                onPress={() => handleCoursePress(course)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.courseHeader}>
+          {filteredCourses.map((course) => (
+            <TouchableOpacity
+              key={course.id}
+              style={[
+                styles.courseCard,
+                { backgroundColor: colors.cardBackground },
+              ]}
+              onPress={() => handleCoursePress(course)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.courseHeader}>
+                <Ionicons
+                  name="bar-chart"
+                  size={28}
+                  color={colors.textPrimary}
+                />
+                <Text
+                  style={[styles.courseTitle, { color: colors.textPrimary }]}
+                >
+                  {course.title}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </View>
+
+              <View style={styles.courseDivider} />
+
+              <View style={styles.courseMetadata}>
+                <View style={styles.metadataRow}>
                   <Ionicons
-                    name="bar-chart"
-                    size={28}
-                    color={colors.textPrimary}
-                  />
-                  <Text
-                    style={[styles.courseTitle, { color: colors.textPrimary }]}
-                  >
-                    {course.title}
-                  </Text>
-                  <Ionicons
-                    name="chevron-down"
-                    size={24}
+                    name="school-outline"
+                    size={18}
                     color={colors.textSecondary}
                   />
+                  <Text
+                    style={[
+                      styles.metadataText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {course.shortDescription}
+                  </Text>
                 </View>
 
-                <View style={styles.courseDivider} />
-
-                <View style={styles.courseMetadata}>
-                  <View style={styles.metadataRow}>
-                    <Ionicons
-                      name="school-outline"
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.metadataText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {course.shortDescription}
-                    </Text>
-                  </View>
-
-                  <View style={styles.metadataRow}>
-                    <Ionicons
-                      name="time-outline"
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.metadataText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {course.estimatedTime}
-                    </Text>
-                  </View>
-
-                  <View style={styles.metadataRow}>
-                    <Ionicons
-                      name="trending-up"
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.metadataText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t('explore.basic')}
-                    </Text>
-                  </View>
+                <View style={styles.metadataRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.metadataText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {course.estimatedTime}
+                  </Text>
                 </View>
-              </TouchableOpacity>
-            ))}
+
+                <View style={styles.metadataRow}>
+                  <Ionicons
+                    name="trending-up"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.metadataText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {getDifficultyLabel(course.difficulty)}
+                  </Text>
+                </View>
+
+                {course.enrollmentCount != null && course.enrollmentCount > 0 && (
+                  <View style={styles.metadataRow}>
+                    <Ionicons
+                      name="people-outline"
+                      size={18}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.metadataText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t('explore.enrolledCount', { count: course.enrollmentCount })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
 
         {/* Bottom Sheet */}
@@ -318,20 +348,42 @@ export default function ExploreScreen() {
           ref={bottomSheetRef}
           course={selectedCourse}
           isEnrolled={
-            selectedCourse ? enrolledCourses.includes(selectedCourse.id) : false
+            selectedCourse
+              ? enrolledCourseIds.includes(selectedCourse.id)
+              : false
           }
           onEnroll={handleEnroll}
           onViewCourse={handleViewCourse}
-          onChange={handleBottomSheetChange}
         />
       </View>
     </GestureHandlerRootView>
   )
 }
 
+const getDifficultyLabel = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner':
+      return t('explore.basic')
+    case 'intermediate':
+      return t('explore.intermediate')
+    case 'advanced':
+      return t('explore.advanced')
+    default:
+      return difficulty
+  }
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -429,33 +481,5 @@ const styles = StyleSheet.create({
   metadataText: {
     fontSize: 15,
     flex: 1,
-  },
-  centerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#4A90A4',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 16,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 })

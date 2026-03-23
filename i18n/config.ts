@@ -11,9 +11,9 @@ export const i18n = new I18n({
   'pt-BR': ptBR,
 })
 
-// Set default locale
-i18n.defaultLocale = 'en'
-i18n.locale = 'en'
+// Set default locale to Portuguese
+i18n.defaultLocale = 'pt-BR'
+i18n.locale = 'pt-BR'
 
 // Enable fallback to default locale
 i18n.enableFallback = true

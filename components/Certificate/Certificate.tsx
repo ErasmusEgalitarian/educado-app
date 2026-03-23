@@ -54,7 +54,7 @@ const Certificate: React.FC<CertificateProps> = ({
       <View style={styles.content}>
         {/* Badge */}
         <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-          <Ionicons name="trophy" size={48} color={colors.textLight} />
+          <Ionicons name="trophy" size={32} color={colors.textLight} />
         </View>
 
         {/* Title */}
@@ -118,15 +118,11 @@ const Certificate: React.FC<CertificateProps> = ({
 const styles = StyleSheet.create({
   certificate: {
     width: '100%',
-    aspectRatio: 0.7,
     padding: 32,
     borderRadius: 16,
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
@@ -166,50 +162,48 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   content: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 16,
   },
   badge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   certificateTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: 2,
-    marginBottom: 24,
+    marginBottom: 20,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: 13,
+    marginBottom: 6,
   },
   userName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   achievementText: {
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: 13,
+    marginBottom: 6,
     textAlign: 'center',
   },
   courseName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: 16,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   detailsContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   detailItem: {
     flexDirection: 'row',
@@ -224,8 +218,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   date: {
-    fontSize: 14,
-    marginBottom: 24,
+    fontSize: 13,
+    marginBottom: 20,
   },
   signatureLine: {
     borderTopWidth: 1,

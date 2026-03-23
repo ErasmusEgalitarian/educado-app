@@ -1,24 +1,16 @@
 import SectionListItem from '@/components/Course/SectionListItem'
 import { AppColors } from '@/constants/theme/AppColors'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useCourse } from '@/hooks/api/useCourse'
+import { useCourse } from '@/hooks/useCourses'
+import { useDownloadCourse, useIsDownloaded, useDeleteDownload } from '@/hooks/useDownloads'
+import { useEnrollmentDetail } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
-import { unenrollFromCourse } from '@/utils/enrollment-storage'
-import { getCourseImage } from '@/utils/image-loader'
-import {
-  getCourseCompletionPercentage,
-  getCourseProgress,
-  getCourseScorePercentage,
-  getFirstIncompleteSectionId,
-  isCourseCompleted,
-  isSectionCompleted,
-} from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -37,104 +29,89 @@ export default function CourseDetailScreen() {
   const insets = useSafeAreaInsets()
   const { currentLanguage } = useLanguage()
 
-  // Fetch course from API
-  const { data: course, isLoading, error } = useCourse(courseId)
-  const [completedSections, setCompletedSections] = useState<Set<string>>(
-    new Set()
-  )
-  const [completionPercentage, setCompletionPercentage] = useState(0)
-  const [sectionScores, setSectionScores] = useState<
-    Map<string, { score: number; totalQuestions: number }>
-  >(new Map())
-  const [courseCompleted, setCourseCompleted] = useState(false)
-  const [courseScorePercentage, setCourseScorePercentage] = useState(0)
-
-  const loadProgress = useCallback(async () => {
-    if (!course) return
-
-    const courseProgress = await getCourseProgress(courseId)
-    const completed = new Set(
-      courseProgress.sections.filter((s) => s.completed).map((s) => s.sectionId)
-    )
-    setCompletedSections(completed)
-
-    // Build section scores map
-    const scores = new Map<string, { score: number; totalQuestions: number }>()
-    courseProgress.sections.forEach((section) => {
-      if (section.completed) {
-        scores.set(section.sectionId, {
-          score: section.score,
-          totalQuestions: section.totalQuestions,
-        })
+  const {
+    data: course,
+    isLoading: courseLoading,
+    refetch: refetchCourse,
+  } = useCourse(courseId)
+  const { data: enrollmentDetail, refetch: refetchProgress } =
+    useEnrollmentDetail(courseId)
+  const { data: downloadManifest } = useIsDownloaded(courseId)
+  const downloadMutation = useDownloadCourse()
+  const deleteMutation = useDeleteDownload()
+  const isCourseDownloaded = downloadManifest?.status === 'complete'
+  const progress = enrollmentDetail
+    ? {
+        sectionProgresses: enrollmentDetail.sections.map((s) => ({
+          sectionId: s.id,
+          completedAt: s.status === 'completed' ? new Date().toISOString() : null,
+          id: s.id,
+          courseProgressId: '',
+        })),
       }
-    })
-    setSectionScores(scores)
-
-    // Get completion percentage
-    const percentage = await getCourseCompletionPercentage(
-      courseId,
-      course.sections.length
-    )
-    setCompletionPercentage(percentage)
-
-    // Check if course is completed
-    const isCompleted = await isCourseCompleted(
-      courseId,
-      course.sections.length
-    )
-    setCourseCompleted(isCompleted)
-
-    // Get overall course score if completed
-    if (isCompleted) {
-      const overallScore = await getCourseScorePercentage(courseId)
-      setCourseScorePercentage(overallScore)
-    }
-  }, [course, courseId])
-
-  // Load progress on initial mount
-  useEffect(() => {
-    if (course) {
-      loadProgress()
-    }
-  }, [course, loadProgress])
+    : undefined
 
   // Reload progress when screen comes back into focus
   useFocusEffect(
     useCallback(() => {
-      if (course) {
-        loadProgress()
-      }
-    }, [course, loadProgress])
+      refetchCourse()
+      refetchProgress()
+    }, [refetchCourse, refetchProgress])
   )
 
-  const handleStartCourse = async () => {
+  // Compute completion state from API progress
+  const { completedSections, sectionScores, completionPercentage } =
+    useMemo(() => {
+      const completed = new Set<string>()
+      const scores = new Map<
+        string,
+        { score: number; totalQuestions: number }
+      >()
+
+      if (progress?.sectionProgresses) {
+        for (const sp of progress.sectionProgresses) {
+          if (sp.completedAt) {
+            completed.add(sp.sectionId)
+          }
+        }
+      }
+
+      // Calculate score from local storage if available (API doesn't store scores)
+      // For now, completed sections show as completed without score detail
+      const totalSections = course?.sections.length || 0
+      const percentage =
+        totalSections > 0
+          ? Math.round((completed.size / totalSections) * 100)
+          : 0
+
+      return {
+        completedSections: completed,
+        sectionScores: scores,
+        completionPercentage: percentage,
+      }
+    }, [progress, course])
+
+  const handleStartCourse = () => {
     if (!course) return
 
-    const firstIncompleteId = await getFirstIncompleteSectionId(
-      courseId,
-      course.sections.map((s) => s.id)
+    // Find first incomplete section
+    const firstIncomplete = course.sections.find(
+      (s) => !completedSections.has(s.id)
     )
-
-    router.push(`/(tabs)/courses/${courseId}/section/${firstIncompleteId}`)
+    const targetSection = firstIncomplete || course.sections[0]
+    if (targetSection) {
+      router.push(`/(tabs)/courses/${courseId}/section/${targetSection.id}`)
+    }
   }
 
-  const handleSectionPress = async (
-    sectionId: string,
-    sectionIndex: number
-  ) => {
+  const handleSectionPress = (sectionId: string, sectionIndex: number) => {
     if (!course) return
 
     // Check if previous sections are completed (unless it's the first section)
     if (sectionIndex > 0) {
       const previousSectionId = course.sections[sectionIndex - 1].id
-      const isPreviousCompleted = await isSectionCompleted(
-        courseId,
-        previousSectionId
-      )
-
-      if (!isPreviousCompleted) {
-        // Section is locked
-        return
+      if (!completedSections.has(previousSectionId)) {
+        return // Section is locked
       }
     }
 
@@ -143,8 +120,7 @@ export default function CourseDetailScreen() {
 
   const isSectionLocked = (sectionIndex: number): boolean => {
     if (sectionIndex === 0) return false
-
-    const previousSectionId = course?.sections[sectionIndex - 1].id
+    const previousSectionId = course?.sections[sectionIndex - 1]?.id
     return previousSectionId ? !completedSections.has(previousSectionId) : false
   }
 
@@ -161,8 +137,7 @@ export default function CourseDetailScreen() {
         {
           text: t('course.unenrollConfirm'),
           style: 'destructive',
-          onPress: async () => {
-            await unenrollFromCourse(courseId)
+          onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             router.back()
           },
@@ -171,52 +146,41 @@ export default function CourseDetailScreen() {
     )
   }
 
-  // Show loading state
-  if (isLoading) {
+  if (courseLoading) {
     return (
       <View
         style={[
           styles.container,
-          styles.centerContainer,
+          styles.centerContent,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <ActivityIndicator size="large" color="#4A90A4" />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          {t('course.loading') || 'Loading course...'}
-        </Text>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
 
-  // Show error state
-  if (error || !course) {
+  if (!course) {
     return (
       <View
         style={[
           styles.container,
-          styles.centerContainer,
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Ionicons name="alert-circle" size={64} color="#EF4444" />
-        <Text style={[styles.errorText, { color: colors.textPrimary }]}>
-          {t('errors.loadCourse') || 'Failed to load course'}
+        <Text style={{ color: colors.textPrimary }}>
+          {t('errors.loadCourse')}
         </Text>
-        <TouchableOpacity
-          style={styles.backToCoursesButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backToCoursesText}>
-            {t('course.back') || 'Go Back'}
-          </Text>
-        </TouchableOpacity>
       </View>
     )
   }
 
   const isStarted = completedSections.size > 0
+
+  // Course image: use API URL if it starts with http, otherwise use local image loader
+  const courseImageSource = course.imageUrl.startsWith('http')
+    ? { uri: course.imageUrl }
+    : require('@/assets/images/logo_black240.png')
 
   return (
     <View
@@ -234,7 +198,7 @@ export default function CourseDetailScreen() {
         {/* Hero Image with Back Button */}
         <View style={styles.heroImageContainer}>
           <Image
-            source={getCourseImage(course.imageUrl)}
+            source={courseImageSource}
             style={styles.heroImage}
             contentFit="cover"
           />
@@ -264,12 +228,47 @@ export default function CourseDetailScreen() {
             <Text style={[styles.courseTitle, { color: colors.textPrimary }]}>
               {course.title}
             </Text>
-            <TouchableOpacity style={styles.downloadButton}>
-              <Ionicons
-                name="download-outline"
-                size={24}
-                color={colors.primary}
-              />
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                if (isCourseDownloaded) {
+                  Alert.alert(
+                    t('downloads.downloadComplete'),
+                    course.title,
+                    [
+                      { text: t('common.ok'), style: 'cancel' },
+                      {
+                        text: t('downloads.deleteDownload'),
+                        style: 'destructive',
+                        onPress: () => deleteMutation.mutate(courseId),
+                      },
+                    ]
+                  )
+                } else if (!downloadMutation.isPending) {
+                  Alert.alert(
+                    t('downloads.downloadCourse'),
+                    course.title,
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('common.ok'),
+                        onPress: () => downloadMutation.mutate(courseId),
+                      },
+                    ]
+                  )
+                }
+              }}
+            >
+              {downloadMutation.isPending ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons
+                  name={isCourseDownloaded ? 'checkmark-circle' : 'download-outline'}
+                  size={24}
+                  color={isCourseDownloaded ? '#22C55E' : colors.primary}
+                />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -298,76 +297,17 @@ export default function CourseDetailScreen() {
           </View>
         </View>
 
-        {/* Show message if completed but didn't pass */}
-        {courseCompleted && courseScorePercentage < course.passingThreshold && (
-          <View
-            style={[
-              styles.notPassedBanner,
-              {
-                backgroundColor: colors.warning + '15',
-                borderColor: colors.warning,
-              },
-            ]}
-          >
-            <Ionicons name="alert-circle" size={24} color={colors.warning} />
-            <View style={styles.notPassedTextContainer}>
-              <Text
-                style={[styles.notPassedTitle, { color: colors.textPrimary }]}
-              >
-                {t('course.courseCompleted')}
-              </Text>
-              <Text
-                style={[
-                  styles.notPassedMessage,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {t('course.yourScore', {
-                  score: courseScorePercentage,
-                  passing: course.passingThreshold,
-                })}
-              </Text>
-              <Text
-                style={[styles.notPassedHint, { color: colors.textSecondary }]}
-              >
-                {t('course.retakeMessage')}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Start/Continue Button */}
-        {!courseCompleted && (
-          <TouchableOpacity
-            style={[styles.startButton, { backgroundColor: colors.primary }]}
-            onPress={handleStartCourse}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.startButtonText}>
-              {isStarted
-                ? t('course.continueLearning')
-                : t('course.startCourse')}
-            </Text>
-            <Ionicons name="play-circle" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* View Certificate Button (if passed) */}
-        {courseCompleted &&
-          courseScorePercentage >= course.passingThreshold && (
-            <TouchableOpacity
-              style={[styles.startButton, { backgroundColor: colors.success }]}
-              onPress={() =>
-                router.push(`/(tabs)/courses/${courseId}/certificate`)
-              }
-              activeOpacity={0.8}
-            >
-              <Text style={styles.startButtonText}>
-                {t('course.viewCertificate')}
-              </Text>
-              <Ionicons name="ribbon" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
+        <TouchableOpacity
+          style={[styles.startButton, { backgroundColor: colors.primary }]}
+          onPress={handleStartCourse}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.startButtonText}>
+            {isStarted ? t('course.continueLearning') : t('course.startCourse')}
+          </Text>
+          <Ionicons name="play-circle" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
 
         {/* Sections List */}
         <View style={styles.sectionsContainer}>
@@ -407,6 +347,10 @@ export default function CourseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -513,34 +457,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  notPassedBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginHorizontal: 24,
-    marginBottom: 24,
-    gap: 12,
-  },
-  notPassedTextContainer: {
-    flex: 1,
-  },
-  notPassedTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  notPassedMessage: {
-    fontSize: 14,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  notPassedHint: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
   sectionsContainer: {
     paddingHorizontal: 24,
   },
@@ -557,32 +473,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textDecorationLine: 'underline',
-  },
-  centerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  backToCoursesButton: {
-    backgroundColor: '#4A90A4',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 24,
-  },
-  backToCoursesText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 })
