@@ -1,9 +1,10 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { Question } from '@/data/mock-data'
+import { imageLoader } from '@/utils/image-loader'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import ButtonPrimary from '../Common/ButtonPrimary'
 
 interface QuestionCardProps {
@@ -12,6 +13,7 @@ interface QuestionCardProps {
   showResult?: boolean
   currentQuestion: number
   totalQuestions: number
+  imageUrl?: string // Optional image asset name (without extension)
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -19,6 +21,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer,
   currentQuestion,
   totalQuestions,
+  imageUrl,
 }) => {
   const colors = AppColors()
   const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(
@@ -165,9 +168,34 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         )}
       </View>
 
-      <Text style={[styles.questionText, { color: colors.textPrimary }]}>
-        {question.question}
-      </Text>
+      {/* Optional Image */}
+      {imageUrl && (
+        <View style={styles.imageContainer}>
+          <Image
+            source={imageLoader(imageUrl)}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+
+      <View style={styles.questionContainer}>
+        <Text style={[styles.questionText, { color: colors.textPrimary }]}>
+          {question.question}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.speakerButton,
+            { backgroundColor: colors.primaryLight },
+          ]}
+          onPress={() => {
+            // TODO: Implement text-to-speech functionality
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          }}
+        >
+          <Ionicons name="volume-high" size={24} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.answersContainer}>
         {question.type === 'true_false' ? (
@@ -262,11 +290,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#D3C5B8',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  questionContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 24,
+  },
   questionText: {
     fontSize: 22,
     fontWeight: '600',
     lineHeight: 32,
-    marginBottom: 24,
+    flex: 1,
+  },
+  speakerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
   },
   answersContainer: {
     gap: 12,

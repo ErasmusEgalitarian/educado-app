@@ -1,11 +1,11 @@
 // Environment variables
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001'
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5001'
 
 export default {
   expo: {
     name: 'Educado',
     slug: 'educado',
-    version: '1.0.0',
+    version: '1.0.3',
     orientation: 'portrait',
     icon: './assets/images/logo_black240.png',
     scheme: 'educado',
@@ -28,6 +28,7 @@ export default {
         foregroundImage: './assets/images/logo_black240.png',
       },
       package: 'com.educado2.app',
+      versionCode: 3,
     },
     plugins: [
       'expo-router',
@@ -37,7 +38,7 @@ export default {
         {
           photosPermission: 'Allow $(PRODUCT_NAME) to save your certificates.',
           savePhotosPermission: 'Allow $(PRODUCT_NAME) to save your certificates.',
-          isAccessMediaLocationEnabled: true,
+          isAccessMediaLocationEnabled: false,
         },
       ],
       [
