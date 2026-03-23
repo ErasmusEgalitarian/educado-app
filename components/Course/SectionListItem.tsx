@@ -38,10 +38,14 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
       : null
 
   const getStatusText = () => {
+    // Support both legacy questions and new activities format
+    const totalItems =
+      section.activities?.length || section.questions?.length || 0
+
     if (isCompleted) {
-      return `${section.questions.length}/${section.questions.length} ${t('common.completed')}`
+      return `${totalItems}/${totalItems} ${t('common.completed')}`
     }
-    return `0/${section.questions.length} ${t('common.completed')}`
+    return `0/${totalItems} ${t('common.completed')}`
   }
 
   const getStatusColor = () => {
