@@ -206,6 +206,7 @@
     "error": "Erro de Login",
     "fillAllFields": "Por favor, insira seu email e senha",
     "invalidCredentials": "Email ou senha inválidos",
+    "emailAlreadyExists": "Este email já está cadastrado. Tente fazer login.",
     "validationError": "Verifique seus dados",
     "serverError": "Erro no servidor. Tente novamente mais tarde",
     "networkError": "Sem conexão. Verifique sua internet"

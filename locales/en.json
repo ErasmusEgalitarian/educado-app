@@ -206,6 +206,7 @@
     "error": "Login Error",
     "fillAllFields": "Please enter your email and password",
     "invalidCredentials": "Invalid email or password",
+    "emailAlreadyExists": "This email is already registered. Try signing in.",
     "validationError": "Please check your input",
     "serverError": "Server error. Please try again later",
     "networkError": "Unable to connect. Check your internet connection"

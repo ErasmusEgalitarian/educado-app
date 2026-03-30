@@ -52,7 +52,9 @@ export default function RegisterScreen() {
       router.replace('/(tabs)')
     } catch (error) {
       if (error instanceof ApiError) {
-        if (error.status === 422) {
+        if (error.status === 409) {
+          Alert.alert(t('common.error'), t('auth.emailAlreadyExists'))
+        } else if (error.status === 422) {
           Alert.alert(t('common.error'), t('auth.validationError'))
         } else {
           Alert.alert(t('common.error'), t('auth.serverError'))
