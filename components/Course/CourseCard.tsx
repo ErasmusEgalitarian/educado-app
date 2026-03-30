@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
   },
   metadata: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
     marginBottom: 12,
   },

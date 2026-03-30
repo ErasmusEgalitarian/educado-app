@@ -1,11 +1,12 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWebVideoSource } from '@/hooks/useWebVideoSource'
 import { t } from '@/i18n/config'
 import { getAuthHeaders } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native'
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -29,14 +30,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // If no video URL, show placeholder and auto-complete
   const hasVideo = !!videoUrl && videoUrl.length > 0
 
-  // Build video source with Authorization header for remote URLs
+  // On web, fetch video as blob (HTML5 <video> can't send custom headers)
+  const webBlobUrl = useWebVideoSource(
+    hasVideo && videoUrl.startsWith('http') ? videoUrl : null,
+    token
+  )
+
+  // Build video source with Authorization header for native, blob URL for web
   const videoSource = useMemo(() => {
     if (!hasVideo) return null
     if (videoUrl.startsWith('http')) {
+      if (Platform.OS === 'web') {
+        return webBlobUrl ? { uri: webBlobUrl } : null
+      }
       return { uri: videoUrl, headers: getAuthHeaders(token) }
     }
     return videoUrl
-  }, [hasVideo, videoUrl, token])
+  }, [hasVideo, videoUrl, token, webBlobUrl])
 
   const player = useVideoPlayer(videoSource, (p) => {
     if (hasVideo) {
