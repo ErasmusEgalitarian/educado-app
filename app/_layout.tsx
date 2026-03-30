@@ -26,6 +26,7 @@ function RootNavigator() {
       </Stack>
       {/* Redirect based on auth state */}
       {!isAuthenticated && <Redirect href="/(auth)" />}
+      {isAuthenticated && <Redirect href="/(tabs)" />}
     </>
   )
 }
