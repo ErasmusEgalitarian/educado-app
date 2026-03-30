@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router'
 import React from 'react'
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -69,16 +70,22 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    Alert.alert(t('auth.logoutConfirmTitle'), t('auth.logoutConfirmMessage'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('auth.logout'),
-        style: 'destructive',
-        onPress: async () => {
-          await logout()
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('auth.logoutConfirmMessage'))) {
+        logout()
+      }
+    } else {
+      Alert.alert(t('auth.logoutConfirmTitle'), t('auth.logoutConfirmMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('auth.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            await logout()
+          },
         },
-      },
-    ])
+      ])
+    }
   }
 
   const menuItems = [

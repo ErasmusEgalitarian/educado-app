@@ -1,5 +1,6 @@
 import { AppColors } from '@/constants/theme/AppColors'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWebVideoSource } from '@/hooks/useWebVideoSource'
 import { getAuthHeaders } from '@/services/api'
 import { getVideoSource } from '@/utils/video-assets'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,6 +8,7 @@ import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -41,14 +43,26 @@ const VideoPlayerWithPauses: React.FC<VideoPlayerWithPausesProps> = ({
   )
   const hasTriggeredComplete = useRef(false)
 
-  // Build video source with auth headers for remote URLs
+  // Resolve local/remote video source
+  const resolvedSource = useMemo(() => getVideoSource(videoUrl), [videoUrl])
+  const remoteUrl =
+    typeof resolvedSource === 'string' && resolvedSource.startsWith('http')
+      ? resolvedSource
+      : null
+
+  // On web, fetch video as blob (HTML5 <video> can't send custom headers)
+  const webBlobUrl = useWebVideoSource(remoteUrl, token)
+
+  // Build video source with auth headers for native, blob URL for web
   const videoSource = useMemo(() => {
-    const source = getVideoSource(videoUrl)
-    if (typeof source === 'string' && source.startsWith('http')) {
-      return { uri: source, headers: getAuthHeaders(token) }
+    if (remoteUrl) {
+      if (Platform.OS === 'web') {
+        return webBlobUrl ? { uri: webBlobUrl } : null
+      }
+      return { uri: remoteUrl, headers: getAuthHeaders(token) }
     }
-    return source
-  }, [videoUrl, token])
+    return resolvedSource
+  }, [remoteUrl, resolvedSource, token, webBlobUrl])
 
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = false

@@ -230,8 +230,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = useCallback(async () => {
     await removeToken()
     await removeUser()
-    await clearAllProgress()
-    await deleteAllDownloads()
+    try { await clearAllProgress() } catch {}
+    try { await deleteAllDownloads() } catch {}
     setState({
       user: null,
       token: null,

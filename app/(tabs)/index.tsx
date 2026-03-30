@@ -419,6 +419,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     flexShrink: 1,
+    minWidth: 0,
   },
   courseDivider: {
     height: 1,
@@ -431,13 +432,14 @@ const styles = StyleSheet.create({
   },
   metadataRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
   metadataText: {
     fontSize: 15,
     flex: 1,
     flexShrink: 1,
+    minWidth: 0,
   },
   courseProgressContainer: {
     gap: 8,
