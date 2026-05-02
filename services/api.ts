@@ -1,11 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { API_BASE_URL as API_URL } from '@/utils/api-config'
 import {
   getSecureToken,
   setSecureToken,
   removeSecureToken,
 } from './secure-storage'
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL
 
 const USER_KEY = '@educado:user'
 const DEVICE_ID_KEY = '@educado:deviceId'

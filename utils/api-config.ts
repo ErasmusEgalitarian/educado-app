@@ -1,4 +1,9 @@
-import Constants from 'expo-constants'
+const API_URL = process.env.EXPO_PUBLIC_API_URL
 
-export const API_BASE_URL =
-  Constants.expoConfig?.extra?.API_URL || 'http://10.0.2.2:5001'
+if (!API_URL) {
+  throw new Error(
+    'EXPO_PUBLIC_API_URL is not set. Define it in .env for local dev or via `eas env:create` for EAS builds.'
+  )
+}
+
+export const API_BASE_URL: string = API_URL

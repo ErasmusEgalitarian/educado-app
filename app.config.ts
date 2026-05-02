@@ -1,20 +1,16 @@
-// Environment variables
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:5001'
-
 export default {
   expo: {
     name: 'Educado',
     slug: 'educado',
-    version: '1.0.3',
+    version: '1.0.4',
     orientation: 'portrait',
     icon: './assets/images/logo_black240.png',
     scheme: 'educado',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     extra: {
-      API_URL,
       eas: {
-        projectId: "d286ed3c-ebc2-4462-83d1-447c2a59fb4b",
+        projectId: "41f43939-b81b-4ea6-850f-908caf2e414b",
       }
     },
     android: {
@@ -23,7 +19,7 @@ export default {
         foregroundImage: './assets/images/logo_black240.png',
       },
       package: 'com.educado2.app',
-      versionCode: 3,
+      versionCode: 4,
     },
     plugins: [
       'expo-router',

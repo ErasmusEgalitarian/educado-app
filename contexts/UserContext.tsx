@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/utils/api-config'
 import { AsyncStore } from '@/utils/async-store'
 import { syncAllProgress } from '@/utils/progress-sync'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -35,9 +36,7 @@ async function fetchStoredUser(): Promise<User | null> {
 }
 
 async function loginUser(username: string): Promise<User> {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL
-
-  const response = await fetch(`${apiUrl}/user/login`, {
+  const response = await fetch(`${API_BASE_URL}/user/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
