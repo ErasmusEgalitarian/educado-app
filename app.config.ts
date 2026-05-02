@@ -2,7 +2,7 @@ export default {
   expo: {
     name: 'Educado',
     slug: 'educado',
-    version: '1.0.4',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/images/logo_black240.png',
     scheme: 'educado',
@@ -19,7 +19,7 @@ export default {
         foregroundImage: './assets/images/logo_black240.png',
       },
       package: 'com.educado2.app',
-      versionCode: 4,
+      versionCode: 5,
     },
     plugins: [
       'expo-router',
