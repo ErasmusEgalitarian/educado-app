@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/utils/api-config'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as FileSystem from 'expo-file-system/legacy'
 import {
@@ -61,8 +62,7 @@ async function removeManifest(courseId: string) {
 // ============================================================
 
 function getMediaUrl(mediaId: string): string {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL
-  return `${apiUrl}/media/${mediaId}/stream`
+  return `${API_BASE_URL}/media/${mediaId}/stream`
 }
 
 function getLocalPath(courseId: string, mediaId: string, ext: string): string {
