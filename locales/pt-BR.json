@@ -105,6 +105,7 @@
     "courseCompleted": "Curso concluído",
     "yourScore": "Sua pontuação: {{score}}% (Necessário: {{passing}}%)",
     "retakeMessage": "Refaça as seções para melhorar sua pontuação e ganhar um certificado.",
+    "pointsLabel": "{{points}} pontos",
     "percentCompleted": "{{percent}}% concluído",
     "unenrollCourse": "Retirar curso",
     "unenrollConfirmTitle": "Desinscrever do Curso?",
@@ -129,7 +130,12 @@
     "answeredCorrectly": "Você acertou {{correct}} de {{total}} questões",
     "courseName": "Curso: {{name}}",
     "completeAndContinue": "Concluir e Continuar",
-    "readAllPages": "Leia todas as páginas para continuar"
+    "readAllPages": "Leia todas as páginas para continuar",
+    "notStarted": "Não iniciado",
+    "lockedStatus": "Bloqueado",
+    "exitActivity": "Sair da Atividade",
+    "exitActivityMessage": "Tem certeza de que deseja sair da atividade? O progresso não será salvo e você precisará refazê-la para continuar o curso.",
+    "confirmExit": "Sair"
   },
   "results": {
     "greatJob": "Ótimo Trabalho!",
@@ -148,6 +154,8 @@
     "headerTitle": "Seu Certificado",
     "congratulations": "Parabéns!",
     "completedSubtitle": "Você concluiu o curso com sucesso",
+    "sectionCompletedSingular": "{{count}} seção concluída",
+    "sectionCompletedPlural": "{{count}} seções concluídas",
     "download": "Baixar Certificado",
     "backToCourses": "Voltar aos Cursos",
     "keepLearning": "Continue aprendendo! Confira mais cursos para dar sequência à sua jornada educacional.",

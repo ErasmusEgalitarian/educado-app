@@ -91,6 +91,20 @@ const TabsLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="courses/[courseId]/section/[sectionId]/index"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="courses/[courseId]/section/[sectionId]/learn"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
         name="courses/[courseId]/review"
         options={{
           href: null,

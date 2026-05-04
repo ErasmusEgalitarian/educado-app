@@ -1,4 +1,10 @@
-import { Course, Question, Section, VideoPauseQuestion } from '@/data/mock-data'
+import {
+  Activity,
+  Course,
+  Question,
+  Section,
+  VideoPauseQuestion,
+} from '@/data/mock-data'
 import {
   ApiActivity,
   ApiCourse,
@@ -9,10 +15,7 @@ import {
   getImageUrl,
   getVideoStreamUrl,
 } from '@/services/api'
-import {
-  getOfflineCourse,
-  getLocalMediaUri,
-} from '@/services/download-manager'
+import { getOfflineCourse, getLocalMediaUri } from '@/services/download-manager'
 import { useQuery } from '@tanstack/react-query'
 
 // Detect effective question type for an activity (video_pause can be either MC or TF)
@@ -61,22 +64,54 @@ function transformActivity(activity: ApiActivity): Question {
   }
 }
 
+function transformSectionActivity(activity: ApiActivity): Activity {
+  const effectiveType = getEffectiveQuestionType(activity)
+
+  return {
+    id: activity.id,
+    title: activity.title || undefined,
+    type: activity.type === 'video_pause' ? 'video_pause' : effectiveType,
+    pauseTimestamp: activity.pauseTimestamp ?? undefined,
+    textPages: activity.textPages ?? undefined,
+    question: activity.question ?? undefined,
+    imageUrl: activity.imageMediaId
+      ? getImageUrl(activity.imageMediaId)
+      : undefined,
+    options: activity.options ?? undefined,
+    correctAnswer:
+      activity.correctAnswer == null
+        ? undefined
+        : coerceCorrectAnswer(activity.correctAnswer, effectiveType),
+    icon: activity.icon ?? undefined,
+  }
+}
+
+function hasQuestionContent(activity: ApiActivity): boolean {
+  return activity.question != null && activity.question.trim().length > 0
+}
+
 // Check if an activity is a question (MC, TF, or video_pause final question without timestamp)
 function isRegularQuestion(a: ApiActivity): boolean {
-  if (a.type === 'multiple_choice' || a.type === 'true_false') return true
+  if (a.type === 'multiple_choice' || a.type === 'true_false') {
+    return hasQuestionContent(a)
+  }
   // video_pause without pauseTimestamp = "final question" shown after video
-  if (a.type === 'video_pause' && a.pauseTimestamp == null && a.question != null) return true
+  if (
+    a.type === 'video_pause' &&
+    a.pauseTimestamp == null &&
+    hasQuestionContent(a)
+  )
+    return true
   return false
 }
 
 // Transform API section → app Section
 function transformSection(section: ApiSection): Section {
   const sorted = (section.activities || []).sort((a, b) => a.order - b.order)
+  const activities = sorted.map(transformSectionActivity)
 
   // Regular questions: MC, TF, and video_pause "final questions" (no timestamp)
-  const questions = sorted
-    .filter(isRegularQuestion)
-    .map(transformActivity)
+  const questions = sorted.filter(isRegularQuestion).map(transformActivity)
 
   // Aggregate text pages from text_reading activities (in order)
   const textPages = sorted
@@ -89,7 +124,7 @@ function transformSection(section: ApiSection): Section {
       (a) =>
         a.type === 'video_pause' &&
         a.pauseTimestamp != null &&
-        a.question != null
+        hasQuestionContent(a)
     )
     .map((a) => ({
       pauseTimestamp: a.pauseTimestamp!,
@@ -106,6 +141,7 @@ function transformSection(section: ApiSection): Section {
       ? getImageUrl(section.thumbnailMediaId)
       : '',
     duration: section.duration || 0,
+    activities: activities.length > 0 ? activities : undefined,
     questions,
     textPages: textPages.length > 0 ? textPages : undefined,
     videoPauseQuestions:
@@ -124,19 +160,14 @@ function transformCourse(apiCourse: ApiCourse): Course {
     title: apiCourse.title,
     description: apiCourse.description,
     shortDescription: apiCourse.shortDescription,
-    imageUrl: apiCourse.imageMediaId
-      ? getImageUrl(apiCourse.imageMediaId)
-      : '',
+    imageUrl: apiCourse.imageMediaId ? getImageUrl(apiCourse.imageMediaId) : '',
     sections,
     difficulty: apiCourse.difficulty,
     estimatedTime: apiCourse.estimatedTime,
     passingThreshold: apiCourse.passingThreshold || 75,
     category: apiCourse.category,
     rating: apiCourse.rating || undefined,
-    tags:
-      apiCourse.reusableTags?.map((t) => t.name) ||
-      apiCourse.tags ||
-      [],
+    tags: apiCourse.reusableTags?.map((t) => t.name) || apiCourse.tags || [],
     enrollmentCount: apiCourse.enrollmentCount,
   }
 }
@@ -160,11 +191,12 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
   const sections = (apiCourse.sections || [])
     .sort((a, b) => a.order - b.order)
     .map((section): Section => {
-      const sorted = (section.activities || []).sort((a, b) => a.order - b.order)
+      const sorted = (section.activities || []).sort(
+        (a, b) => a.order - b.order
+      )
+      const activities = sorted.map(transformSectionActivity)
 
-      const questions = sorted
-        .filter(isRegularQuestion)
-        .map(transformActivity)
+      const questions = sorted.filter(isRegularQuestion).map(transformActivity)
 
       const textPages = sorted
         .filter((a) => a.type === 'text_reading' && a.textPages)
@@ -175,7 +207,7 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
           (a) =>
             a.type === 'video_pause' &&
             a.pauseTimestamp != null &&
-            a.question != null
+            hasQuestionContent(a)
         )
         .map((a) => ({
           pauseTimestamp: a.pauseTimestamp!,
@@ -192,6 +224,7 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
           ? getLocalMediaUri(apiCourse.id, section.thumbnailMediaId, 'image')
           : '',
         duration: section.duration || 0,
+        activities: activities.length > 0 ? activities : undefined,
         questions,
         textPages: textPages.length > 0 ? textPages : undefined,
         videoPauseQuestions:
@@ -213,10 +246,7 @@ function transformCourseOffline(apiCourse: ApiCourse): Course {
     passingThreshold: apiCourse.passingThreshold || 75,
     category: apiCourse.category,
     rating: apiCourse.rating || undefined,
-    tags:
-      apiCourse.reusableTags?.map((t) => t.name) ||
-      apiCourse.tags ||
-      [],
+    tags: apiCourse.reusableTags?.map((t) => t.name) || apiCourse.tags || [],
     enrollmentCount: apiCourse.enrollmentCount,
   }
 }

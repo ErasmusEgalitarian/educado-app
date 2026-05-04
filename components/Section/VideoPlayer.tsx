@@ -6,7 +6,13 @@ import { getAuthHeaders } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
 import { VideoView, useVideoPlayer } from 'expo-video'
 import React, { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -160,7 +166,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         style={[styles.container, { backgroundColor: colors.primaryLight }]}
       >
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={colors.error}
+          />
           <Text style={[styles.errorText, { color: colors.error }]}>
             {t('errors.loadSection')}
           </Text>
@@ -201,8 +211,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 240,
+    height: 470,
     backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   video: {
     width: '100%',

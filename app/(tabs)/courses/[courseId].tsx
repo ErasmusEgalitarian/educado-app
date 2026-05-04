@@ -3,8 +3,12 @@ import { AppColors } from '@/constants/theme/AppColors'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCourse } from '@/hooks/useCourses'
-import { useDownloadCourse, useIsDownloaded, useDeleteDownload } from '@/hooks/useDownloads'
-import { useEnrollmentDetail, useDropEnrollment } from '@/hooks/useProgress'
+import {
+  useDeleteDownload,
+  useDownloadCourse,
+  useIsDownloaded,
+} from '@/hooks/useDownloads'
+import { useDropEnrollment, useEnrollmentDetail } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import { clearCourseProgress } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
@@ -44,21 +48,7 @@ export default function CourseDetailScreen() {
   const deleteMutation = useDeleteDownload()
   const dropEnrollmentMutation = useDropEnrollment()
   const isCourseDownloaded = downloadManifest?.status === 'complete'
-  const progress = enrollmentDetail
-    ? {
-        sectionProgresses: enrollmentDetail.sections.map((s) => ({
-          sectionId: s.id,
-          completedAt:
-            s.status === 'completed' && s.score !== null
-              ? new Date().toISOString()
-              : null,
-          id: s.id,
-          courseProgressId: '',
-        })),
-      }
-    : undefined
 
-  // Reload progress when screen comes back into focus
   useFocusEffect(
     useCallback(() => {
       refetchCourse()
@@ -66,46 +56,56 @@ export default function CourseDetailScreen() {
     }, [refetchCourse, refetchProgress])
   )
 
-  // Compute completion state from API progress
-  const { completedSections, sectionScores, completionPercentage } =
-    useMemo(() => {
-      const completed = new Set<string>()
-      const scores = new Map<
-        string,
-        { score: number; totalQuestions: number }
-      >()
+  const {
+    completedSections,
+    sectionScores,
+    completionPercentage,
+    pointsEarned,
+  } = useMemo(() => {
+    const completed = new Set<string>()
+    const scores = new Map<string, { score: number; totalQuestions: number }>()
 
-      if (progress?.sectionProgresses) {
-        for (const sp of progress.sectionProgresses) {
-          if (sp.completedAt) {
-            completed.add(sp.sectionId)
-          }
+    const points =
+      enrollmentDetail?.sections.reduce(
+        (sum, section) => sum + (section.score ?? 0),
+        0
+      ) || 0
+
+    if (enrollmentDetail?.sections) {
+      for (const section of enrollmentDetail.sections) {
+        if (section.status === 'completed') {
+          completed.add(section.id)
+        }
+
+        if (section.score !== null && section.totalQuestions !== null) {
+          scores.set(section.id, {
+            score: section.score,
+            totalQuestions: section.totalQuestions,
+          })
         }
       }
+    }
 
-      // Calculate score from local storage if available (API doesn't store scores)
-      // For now, completed sections show as completed without score detail
-      const totalSections = course?.sections.length || 0
-      const percentage =
-        totalSections > 0
-          ? Math.round((completed.size / totalSections) * 100)
-          : 0
+    const totalSections = course?.sections.length || 0
+    const percentage =
+      totalSections > 0 ? Math.round((completed.size / totalSections) * 100) : 0
 
-      return {
-        completedSections: completed,
-        sectionScores: scores,
-        completionPercentage: percentage,
-      }
-    }, [progress, course])
+    return {
+      completedSections: completed,
+      sectionScores: scores,
+      completionPercentage: percentage,
+      pointsEarned: points,
+    }
+  }, [course, enrollmentDetail])
 
   const handleStartCourse = () => {
     if (!course) return
 
-    // Find first incomplete section
     const firstIncomplete = course.sections.find(
-      (s) => !completedSections.has(s.id)
+      (section) => !completedSections.has(section.id)
     )
     const targetSection = firstIncomplete || course.sections[0]
+
     if (targetSection) {
       router.push(`/(tabs)/courses/${courseId}/section/${targetSection.id}`)
     }
@@ -114,11 +114,10 @@ export default function CourseDetailScreen() {
   const handleSectionPress = (sectionId: string, sectionIndex: number) => {
     if (!course) return
 
-    // Check if previous sections are completed (unless it's the first section)
     if (sectionIndex > 0) {
       const previousSectionId = course.sections[sectionIndex - 1].id
       if (!completedSections.has(previousSectionId)) {
-        return // Section is locked
+        return
       }
     }
 
@@ -137,27 +136,17 @@ export default function CourseDetailScreen() {
       t('course.unenrollConfirmTitle'),
       t('course.unenrollConfirmMessage'),
       [
-        {
-          text: t('course.cancel'),
-          style: 'cancel',
-        },
+        { text: t('course.cancel'), style: 'cancel' },
         {
           text: t('course.unenrollConfirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               await dropEnrollmentMutation.mutateAsync(courseId)
-              // Clear local progress and certificates to prevent XP re-farming
               await clearCourseProgress(courseId)
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success
-              )
               router.back()
             } catch {
-              Alert.alert(
-                t('errors.generic'),
-                t('course.unenrollError')
-              )
+              Alert.alert(t('errors.generic'), t('course.unenrollError'))
             }
           },
         },
@@ -168,11 +157,7 @@ export default function CourseDetailScreen() {
   if (courseLoading) {
     return (
       <View
-        style={[
-          styles.container,
-          styles.centerContent,
-          { backgroundColor: colors.backgroundPrimary },
-        ]}
+        style={[styles.centered, { backgroundColor: colors.backgroundPrimary }]}
       >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
@@ -182,12 +167,9 @@ export default function CourseDetailScreen() {
   if (!course) {
     return (
       <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.backgroundPrimary },
-        ]}
+        style={[styles.centered, { backgroundColor: colors.backgroundPrimary }]}
       >
-        <Text style={{ color: colors.textPrimary }}>
+        <Text style={[styles.errorText, { color: colors.textPrimary }]}>
           {t('errors.loadCourse')}
         </Text>
       </View>
@@ -195,10 +177,11 @@ export default function CourseDetailScreen() {
   }
 
   const isStarted = completedSections.size > 0
-
-  // Course image: use API URL with auth headers if remote, otherwise fallback
   const courseImageSource = course.imageUrl.startsWith('http')
-    ? { uri: course.imageUrl, headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+    ? {
+        uri: course.imageUrl,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }
     : require('@/assets/images/logo_black240.png')
 
   return (
@@ -207,75 +190,61 @@ export default function CourseDetailScreen() {
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 24) + 80 },
-        ]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 24) + 72 },
+        ]}
       >
-        {/* Hero Image with Back Button */}
-        <View style={styles.heroImageContainer}>
+        <View style={styles.heroContainer}>
           <Image
             source={courseImageSource}
             style={styles.heroImage}
             contentFit="cover"
+            contentPosition="center"
           />
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              {
-                backgroundColor: colors.cardBackground,
-                top: insets.top + 16,
-              },
-            ]}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Course Card */}
-        <View
-          style={[
-            styles.courseCard,
-            { backgroundColor: colors.cardBackground },
-          ]}
-        >
-          {/* Course Title */}
-          <View style={styles.courseTitleRow}>
-            <Text style={[styles.courseTitle, { color: colors.textPrimary }]}>
+          <View style={[styles.heroTitleRow, { top: insets.top + 16 }]}>
+            <TouchableOpacity
+              style={styles.backButton}
+              activeOpacity={0.78}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="chevron-back" size={22} color="#28363E" />
+            </TouchableOpacity>
+            <Text style={styles.heroTitle} numberOfLines={1}>
               {course.title}
             </Text>
+          </View>
+        </View>
+
+        <View style={styles.courseCard}>
+          <View style={styles.courseHeader}>
+            <Text style={styles.courseName}>{course.title}</Text>
             <TouchableOpacity
               style={styles.downloadButton}
+              activeOpacity={0.7}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 if (isCourseDownloaded) {
-                  Alert.alert(
-                    t('downloads.downloadComplete'),
-                    course.title,
-                    [
-                      { text: t('common.ok'), style: 'cancel' },
-                      {
-                        text: t('downloads.deleteDownload'),
-                        style: 'destructive',
-                        onPress: () => deleteMutation.mutate(courseId),
-                      },
-                    ]
-                  )
-                } else if (!downloadMutation.isPending) {
-                  Alert.alert(
-                    t('downloads.downloadCourse'),
-                    course.title,
-                    [
-                      { text: t('common.cancel'), style: 'cancel' },
-                      {
-                        text: t('common.ok'),
-                        onPress: () => downloadMutation.mutate(courseId),
-                      },
-                    ]
-                  )
+                  Alert.alert(t('downloads.downloadComplete'), course.title, [
+                    { text: t('common.ok'), style: 'cancel' },
+                    {
+                      text: t('downloads.deleteDownload'),
+                      style: 'destructive',
+                      onPress: () => deleteMutation.mutate(courseId),
+                    },
+                  ])
+                  return
+                }
+
+                if (!downloadMutation.isPending) {
+                  Alert.alert(t('downloads.downloadCourse'), course.title, [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('common.ok'),
+                      onPress: () => downloadMutation.mutate(courseId),
+                    },
+                  ])
                 }
               }}
             >
@@ -283,31 +252,38 @@ export default function CourseDetailScreen() {
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <Ionicons
-                  name={isCourseDownloaded ? 'checkmark-circle' : 'download-outline'}
-                  size={24}
-                  color={isCourseDownloaded ? '#22C55E' : colors.primary}
+                  name={isCourseDownloaded ? 'download' : 'download-outline'}
+                  size={26}
+                  color={colors.primary}
                 />
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Progress Bar */}
-          <View style={styles.progressBarContainer}>
-            <View style={styles.progressBarBackground}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${completionPercentage}%` },
-                ]}
-              />
-            </View>
+          <View style={styles.cardDivider} />
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.max(completionPercentage, 8)}%` },
+              ]}
+            />
           </View>
 
-          {/* Completion Percentage */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Ionicons name="flash" size={16} color="#FCD34D" />
-              <Text style={[styles.statText, { color: colors.textPrimary }]}>
+          <View style={styles.cardDivider} />
+
+          <View style={styles.metricsRow}>
+            <View style={styles.metricItem}>
+              <Ionicons name="star" size={14} color="#F4C542" />
+              <Text style={styles.metricText}>
+                {t('course.pointsLabel', { points: pointsEarned })}
+              </Text>
+            </View>
+
+            <View style={styles.metricItem}>
+              <Ionicons name="flash" size={14} color="#F4C542" />
+              <Text style={styles.metricText}>
                 {t('course.percentCompleted', {
                   percent: completionPercentage,
                 })}
@@ -316,22 +292,21 @@ export default function CourseDetailScreen() {
           </View>
         </View>
 
-        {/* Start/Continue Button */}
         <TouchableOpacity
-          style={[styles.startButton, { backgroundColor: colors.primary }]}
+          style={[styles.primaryAction, { backgroundColor: colors.primary }]}
+          activeOpacity={0.86}
           onPress={handleStartCourse}
-          activeOpacity={0.8}
         >
-          <Text style={styles.startButtonText}>
+          <Text style={styles.primaryActionText}>
             {isStarted ? t('course.continueLearning') : t('course.startCourse')}
           </Text>
-          <Ionicons name="play-circle" size={24} color="#FFFFFF" />
+          <Ionicons name="play-circle-outline" size={20} color="#FDFEFF" />
         </TouchableOpacity>
 
-        {/* Sections List */}
         <View style={styles.sectionsContainer}>
           {course.sections.map((section, index) => {
             const sectionScore = sectionScores.get(section.id)
+
             return (
               <SectionListItem
                 key={section.id}
@@ -346,18 +321,13 @@ export default function CourseDetailScreen() {
           })}
         </View>
 
-        {/* Unenroll Button */}
-        <View style={styles.unenrollContainer}>
-          <TouchableOpacity
-            style={styles.unenrollButton}
-            onPress={handleUnenroll}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.unenrollText}>
-              {t('course.unenrollCourse')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.unenrollButton}
+          activeOpacity={0.72}
+          onPress={handleUnenroll}
+        >
+          <Text style={styles.unenrollText}>{t('course.unenrollCourse')}</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   )
@@ -367,130 +337,148 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centerContent: {
+  centered: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
   },
-  scrollView: {
-    flex: 1,
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
-  scrollContent: {
+  content: {
     paddingBottom: 24,
   },
-  heroImageContainer: {
-    width: '100%',
-    height: 240,
+  heroContainer: {
+    height: 208,
     position: 'relative',
+    overflow: 'hidden',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
   backButton: {
-    position: 'absolute',
-    left: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F7F9FA',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+  },
+  heroTitleRow: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroTitle: {
+    flex: 1,
+    fontSize: 24,
+    lineHeight: 29,
+    fontWeight: '500',
+    color: '#383838',
   },
   courseCard: {
+    backgroundColor: '#FDFEFF',
     borderRadius: 16,
-    padding: 20,
-    marginTop: -30,
-    marginBottom: 24,
-    marginHorizontal: 24,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    marginHorizontal: 48,
+    marginTop: -58,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    shadowColor: '#28363E',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  courseTitleRow: {
+  courseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: 12,
   },
-  courseTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+  courseName: {
     flex: 1,
-    marginRight: 12,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '400',
+    color: '#141B1F',
   },
   downloadButton: {
-    padding: 4,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressBarContainer: {
-    marginBottom: 12,
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#D9E4E8',
+    marginVertical: 10,
   },
-  progressBarBackground: {
-    height: 10,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 5,
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#D8EFF3',
     overflow: 'hidden',
   },
-  progressBarFill: {
+  progressFill: {
     height: '100%',
-    backgroundColor: '#4A90A4',
-    borderRadius: 5,
+    backgroundColor: '#35A1B1',
+    borderRadius: 999,
   },
-  statsRow: {
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  metricItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 4,
   },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statText: {
+  metricText: {
     fontSize: 14,
-    fontWeight: '500',
+    lineHeight: 18,
+    fontWeight: '400',
+    color: '#383838',
   },
-  startButton: {
+  primaryAction: {
+    height: 54,
+    borderRadius: 12,
+    marginHorizontal: 25,
+    marginTop: 22,
+    marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 24,
-    marginHorizontal: 24,
-    gap: 12,
+    gap: 10,
   },
-  startButtonText: {
-    color: '#FFFFFF',
+  primaryActionText: {
+    color: '#FDFEFF',
     fontSize: 18,
+    lineHeight: 23,
     fontWeight: '700',
   },
   sectionsContainer: {
-    paddingHorizontal: 24,
-  },
-  unenrollContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 25,
+    paddingTop: 4,
   },
   unenrollButton: {
-    marginTop: 32,
+    alignSelf: 'center',
     paddingVertical: 12,
-    alignItems: 'center',
+    marginTop: 8,
   },
   unenrollText: {
-    color: '#EF4444',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#D62B25',
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
 })
