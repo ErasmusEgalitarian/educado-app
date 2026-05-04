@@ -105,6 +105,7 @@
     "courseCompleted": "Course completed",
     "yourScore": "Your score: {{score}}% (Passing: {{passing}}%)",
     "retakeMessage": "Retake sections to improve your score and earn a certificate.",
+    "pointsLabel": "{{points}} points",
     "percentCompleted": "{{percent}}% completed",
     "unenrollCourse": "Unenroll from course",
     "unenrollConfirmTitle": "Unenroll from Course?",
@@ -129,7 +130,12 @@
     "answeredCorrectly": "You answered {{correct}} out of {{total}} questions correctly",
     "courseName": "Course: {{name}}",
     "completeAndContinue": "Complete and Continue",
-    "readAllPages": "Read all pages to continue"
+    "readAllPages": "Read all pages to continue",
+    "notStarted": "Not started",
+    "lockedStatus": "Locked",
+    "exitActivity": "Exit activity",
+    "exitActivityMessage": "Are you sure you want to leave this activity? Progress will not be saved and you will need to restart it to continue the course.",
+    "confirmExit": "Exit"
   },
   "results": {
     "greatJob": "Great Job!",
@@ -148,6 +154,8 @@
     "headerTitle": "Your Certificate",
     "congratulations": "Congratulations!",
     "completedSubtitle": "You've successfully completed the course",
+    "sectionCompletedSingular": "{{count}} section completed",
+    "sectionCompletedPlural": "{{count}} sections completed",
     "download": "Download Certificate",
     "backToCourses": "Back to Courses",
     "keepLearning": "Keep learning! Check out more courses to continue your educational journey.",

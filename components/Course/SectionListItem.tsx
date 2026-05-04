@@ -45,14 +45,21 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
     if (isCompleted) {
       return `${totalItems}/${totalItems} ${t('common.completed')}`
     }
-    return `0/${totalItems} ${t('common.completed')}`
+    if (isLocked) {
+      return t('section.lockedStatus')
+    }
+
+    return `0/${totalItems} ${t('section.notStarted')}`
   }
 
   const getStatusColor = () => {
     if (isCompleted) {
-      return '#22C55E' // Green for completed
+      return '#70A31F'
     }
-    return colors.textSecondary // Gray for incomplete
+    if (isLocked) {
+      return '#809CAD'
+    }
+    return '#4E6879'
   }
 
   return (
@@ -60,8 +67,7 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.border,
+          backgroundColor: isLocked ? '#EBF0F2' : colors.cardBackground,
         },
         isLocked && styles.locked,
       ]}
@@ -71,10 +77,7 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
     >
       <View style={styles.content}>
         <Text
-          style={[
-            styles.title,
-            { color: isLocked ? colors.locked : colors.textPrimary },
-          ]}
+          style={[styles.title, { color: isLocked ? '#5A7A92' : '#28363E' }]}
           numberOfLines={2}
         >
           {section.title}
@@ -85,20 +88,17 @@ const SectionListItem: React.FC<SectionListItemProps> = ({
             {getStatusText()}
           </Text>
           {isCompleted && scorePercentage !== null && (
-            <>
-              <Text style={styles.separator}>•</Text>
-              <Text style={[styles.scoreText, { color: colors.textSecondary }]}>
-                {scorePercentage}% {t('common.correct')}
-              </Text>
-            </>
+            <Text style={[styles.scoreText, { color: colors.textSecondary }]}>
+              {scorePercentage}% {t('common.correct')}
+            </Text>
           )}
         </View>
       </View>
 
       <Ionicons
-        name="chevron-forward"
+        name={isLocked ? 'lock-closed-outline' : 'chevron-forward'}
         size={24}
-        color={isLocked ? colors.locked : colors.textSecondary}
+        color={isLocked ? '#6687A2' : '#4E6879'}
       />
     </TouchableOpacity>
   )
@@ -109,40 +109,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    minHeight: 70,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    minHeight: 67,
+    shadowColor: '#28363E',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   locked: {
-    opacity: 0.6,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   content: {
     flex: 1,
     marginRight: 12,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '400',
+    lineHeight: 23,
+    marginBottom: 6,
   },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 6,
   },
   statusText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  separator: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 21,
+    flexShrink: 1,
   },
   scoreText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '400',
+    lineHeight: 21,
+    flexShrink: 1,
   },
 })
 

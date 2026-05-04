@@ -19,6 +19,10 @@ const Certificate: React.FC<CertificateProps> = ({
   totalSections,
 }) => {
   const colors = AppColors()
+  const sectionsCompletedText =
+    totalSections === 1
+      ? t('certificate.sectionCompletedSingular', { count: totalSections })
+      : t('certificate.sectionCompletedPlural', { count: totalSections })
 
   return (
     <View
@@ -92,7 +96,7 @@ const Certificate: React.FC<CertificateProps> = ({
           >
             <Ionicons name="book-outline" size={20} color={colors.primary} />
             <Text style={[styles.detailText, { color: colors.primaryDark }]}>
-              {totalSections} {t('common.sections')} {t('common.completed')}
+              {sectionsCompletedText}
             </Text>
           </View>
         </View>
@@ -107,7 +111,7 @@ const Certificate: React.FC<CertificateProps> = ({
           style={[styles.signatureLine, { borderTopColor: colors.primary }]}
         >
           <Text style={[styles.signatureText, { color: colors.primaryDark }]}>
-            Educado Learning Platform
+            Educado
           </Text>
         </View>
       </View>

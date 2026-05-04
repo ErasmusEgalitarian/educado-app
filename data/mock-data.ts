@@ -18,6 +18,7 @@ export type ActivityType =
 export interface Activity {
   id: string
   type: ActivityType
+  title?: string
   // For video_pause type
   pauseTimestamp?: number // seconds into video when to pause
   // For text_reading type

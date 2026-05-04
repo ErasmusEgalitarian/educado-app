@@ -33,8 +33,14 @@ export default function ExploreScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const bottomSheetRef = useRef<BottomSheet>(null)
 
-  const { data: courses = [], isLoading, error, refetch: refetchCourses } = useAllCourses()
-  const { data: enrollments = [], refetch: refetchEnrollments } = useEnrollments()
+  const {
+    data: courses = [],
+    isLoading,
+    error,
+    refetch: refetchCourses,
+  } = useAllCourses()
+  const { data: enrollments = [], refetch: refetchEnrollments } =
+    useEnrollments()
   const enrollMutation = useEnroll()
   const [refreshing, setRefreshing] = useState(false)
 
@@ -129,14 +135,34 @@ export default function ExploreScreen() {
           size={80}
           color={colors.textSecondary}
         />
-        <Text style={[styles.errorText, { color: colors.textPrimary, marginTop: 16 }]}>
+        <Text
+          style={[
+            styles.errorText,
+            { color: colors.textPrimary, marginTop: 16 },
+          ]}
+        >
           {t('offline.title')}
         </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            textAlign: 'center',
+            marginTop: 8,
+            paddingHorizontal: 32,
+            lineHeight: 22,
+          }}
+        >
           {t('offline.message')}
         </Text>
         <TouchableOpacity
-          style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 24 }}
+          style={{
+            backgroundColor: colors.primary,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 12,
+            marginTop: 24,
+          }}
           onPress={() => router.push('/(tabs)/downloads')}
           activeOpacity={0.7}
         >
@@ -149,7 +175,9 @@ export default function ExploreScreen() {
           onPress={() => refetchCourses()}
           activeOpacity={0.7}
         >
-          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+          <Text
+            style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}
+          >
             {t('offline.retry')}
           </Text>
         </TouchableOpacity>
@@ -170,7 +198,9 @@ export default function ExploreScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           {/* Header with Logo */}
           <View style={styles.header}>
@@ -180,7 +210,11 @@ export default function ExploreScreen() {
                 style={styles.logo}
                 contentFit="contain"
               />
-              <Text style={[styles.title, { color: colors.textPrimary }]}>
+              <Text
+                style={[styles.title, { color: colors.textPrimary }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {t('explore.title')}
               </Text>
             </View>
@@ -323,23 +357,26 @@ export default function ExploreScreen() {
                   </Text>
                 </View>
 
-                {course.enrollmentCount != null && course.enrollmentCount > 0 && (
-                  <View style={styles.metadataRow}>
-                    <Ionicons
-                      name="people-outline"
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.metadataText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t('explore.enrolledCount', { count: course.enrollmentCount })}
-                    </Text>
-                  </View>
-                )}
+                {course.enrollmentCount != null &&
+                  course.enrollmentCount > 0 && (
+                    <View style={styles.metadataRow}>
+                      <Ionicons
+                        name="people-outline"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.metadataText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t('explore.enrolledCount', {
+                          count: course.enrollmentCount,
+                        })}
+                      </Text>
+                    </View>
+                  )}
               </View>
             </TouchableOpacity>
           ))}
@@ -401,12 +438,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    minWidth: 0,
   },
   logo: {
     width: 50,
     height: 50,
   },
   title: {
+    flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     fontSize: 28,
     fontWeight: '700',
   },

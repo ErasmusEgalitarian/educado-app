@@ -31,10 +31,8 @@ export default function CoursesScreen() {
     refetch: refetchEnrollments,
   } = useEnrollments()
 
-  const {
-    data: gamification,
-    refetch: refetchGamification,
-  } = useGamificationSummary()
+  const { data: gamification, refetch: refetchGamification } =
+    useGamificationSummary()
 
   const [refreshing, setRefreshing] = useState(false)
 
@@ -68,7 +66,8 @@ export default function CoursesScreen() {
   const levelName = gamification?.levelName ?? ''
   const xpProgress = gamification?.xpProgress ?? 0
   const xpNeeded = gamification?.xpNeeded ?? 1
-  const xpPercent = xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
+  const xpPercent =
+    xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
 
   if (isLoading) {
     return (
@@ -95,11 +94,24 @@ export default function CoursesScreen() {
           { backgroundColor: colors.backgroundPrimary },
         ]}
       >
-        <Ionicons name="cloud-offline-outline" size={80} color={colors.textSecondary} />
+        <Ionicons
+          name="cloud-offline-outline"
+          size={80}
+          color={colors.textSecondary}
+        />
         <Text style={[styles.emptyStateText, { color: colors.textPrimary }]}>
           {t('offline.title')}
         </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center', marginTop: 8, paddingHorizontal: 32, lineHeight: 22 }}>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 15,
+            textAlign: 'center',
+            marginTop: 8,
+            paddingHorizontal: 32,
+            lineHeight: 22,
+          }}
+        >
           {t('offline.message')}
         </Text>
         <TouchableOpacity
@@ -107,14 +119,18 @@ export default function CoursesScreen() {
           onPress={() => router.push('/(tabs)/downloads')}
           activeOpacity={0.7}
         >
-          <Text style={styles.exploreButtonText}>{t('offline.goToDownloads')}</Text>
+          <Text style={styles.exploreButtonText}>
+            {t('offline.goToDownloads')}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{ marginTop: 12 }}
           onPress={() => refetchEnrollments()}
           activeOpacity={0.7}
         >
-          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>
+          <Text
+            style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}
+          >
             {t('offline.retry')}
           </Text>
         </TouchableOpacity>
@@ -136,7 +152,9 @@ export default function CoursesScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <View style={styles.header}>
             <View style={styles.welcomeContainer}>
@@ -145,7 +163,11 @@ export default function CoursesScreen() {
                 style={styles.logo}
                 contentFit="contain"
               />
-              <Text style={[styles.welcomeText, { color: colors.textPrimary }]}>
+              <Text
+                style={[styles.welcomeText, { color: colors.textPrimary }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {t('home.welcome')}
               </Text>
             </View>
@@ -202,7 +224,9 @@ export default function CoursesScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Header with Logo and Welcome */}
         <View style={styles.header}>
@@ -212,7 +236,11 @@ export default function CoursesScreen() {
               style={styles.logo}
               contentFit="contain"
             />
-            <Text style={[styles.welcomeText, { color: colors.textPrimary }]}>
+            <Text
+              style={[styles.welcomeText, { color: colors.textPrimary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {t('home.welcome')}
             </Text>
           </View>
@@ -357,12 +385,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    minWidth: 0,
   },
   logo: {
     width: 50,
     height: 50,
   },
   welcomeText: {
+    flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     fontSize: 36,
     fontWeight: '700',
   },

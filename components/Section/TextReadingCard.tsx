@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import ButtonPrimary from '../Common/ButtonPrimary'
 
 interface TextReadingCardProps {
   textPages: string[]
   courseTitle: string
   sectionTitle: string
   onComplete: () => void
+  onExit: () => void
 }
 
 const TextReadingCard: React.FC<TextReadingCardProps> = ({
@@ -18,129 +18,97 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
   courseTitle,
   sectionTitle,
   onComplete,
+  onExit,
 }) => {
   const colors = AppColors()
   const [currentPage, setCurrentPage] = useState(0)
   const [viewedPages, setViewedPages] = useState<Set<number>>(new Set([0]))
 
-  const handleNextPage = () => {
-    if (currentPage < textPages.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      const nextPage = currentPage + 1
-      setCurrentPage(nextPage)
-      setViewedPages((prev) => new Set([...prev, nextPage]))
-    }
-  }
-
-  const handlePreviousPage = () => {
-    if (currentPage > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      setCurrentPage(currentPage - 1)
-    }
-  }
-
-  const handleComplete = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    onComplete()
-  }
-
   const allPagesViewed = viewedPages.size === textPages.length
+
+  const goToPage = (nextPage: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setCurrentPage(nextPage)
+    setViewedPages((prev) => new Set([...prev, nextPage]))
+  }
 
   return (
     <View style={styles.container}>
       <View
-        style={[
-          styles.contentCard,
-          { backgroundColor: colors.cardBackgroundLight },
-        ]}
+        style={[styles.card, { backgroundColor: colors.cardBackgroundLight }]}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.courseTitle, { color: colors.textSecondary }]}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.courseTitle}>
             {t('section.courseName', { name: courseTitle })}
           </Text>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {sectionTitle}
-          </Text>
+          <Text style={styles.sectionTitle}>{sectionTitle}</Text>
         </View>
 
-        {/* Text Content with Speaker */}
-        <View style={styles.textContainer}>
-          <View style={styles.textHeader}>
-            <Text style={[styles.textContent, { color: colors.textPrimary }]}>
-              {textPages[currentPage]}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.speakerButton, { backgroundColor: colors.primaryLight }]}
-            onPress={() => {
-              // TODO: Implement text-to-speech functionality
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            }}
-          >
-            <Ionicons name="volume-high" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.bodyText}>{textPages[currentPage]}</Text>
 
-        {/* Page Counter */}
-        <Text style={[styles.pageCounter, { color: colors.textPrimary }]}>
+        <Text style={styles.pageCounter}>
           {currentPage + 1}/{textPages.length}
         </Text>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.backgroundPrimary },
-              currentPage === 0 && styles.navButtonDisabled,
-            ]}
-            onPress={handlePreviousPage}
-            disabled={currentPage === 0}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={28}
-              color={currentPage === 0 ? colors.textSecondary : colors.primary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.backgroundPrimary },
-              currentPage === textPages.length - 1 && styles.navButtonDisabled,
-            ]}
-            onPress={handleNextPage}
-            disabled={currentPage === textPages.length - 1}
-          >
-            <Ionicons
-              name="chevron-forward"
-              size={28}
-              color={
-                currentPage === textPages.length - 1
-                  ? colors.textSecondary
-                  : colors.primary
-              }
-            />
-          </TouchableOpacity>
-        </View>
       </View>
 
-      {/* Complete Button */}
-      <View style={styles.buttonContainer}>
-        <ButtonPrimary
-          title={t('section.completeAndContinue')}
-          onPress={handleComplete}
-          icon="checkmark"
-          fullWidth
+      <View style={styles.navigationRow}>
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            currentPage === 0 && styles.navButtonDisabled,
+            { backgroundColor: currentPage === 0 ? '#C1CFD7' : '#EBF0F2' },
+          ]}
+          activeOpacity={0.75}
+          disabled={currentPage === 0}
+          onPress={() => goToPage(currentPage - 1)}
+        >
+          <Ionicons name="chevron-back" size={28} color="#4E6879" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, { backgroundColor: '#EBF0F2' }]}
+          activeOpacity={0.75}
+          disabled={currentPage === textPages.length - 1}
+          onPress={() => {
+            if (currentPage < textPages.length - 1) {
+              goToPage(currentPage + 1)
+            }
+          }}
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={28}
+            color={currentPage === textPages.length - 1 ? '#9FB4C1' : '#4E6879'}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[
+            styles.primaryButton,
+            { backgroundColor: allPagesViewed ? colors.primary : '#C1CFD7' },
+          ]}
+          activeOpacity={0.82}
           disabled={!allPagesViewed}
-        />
-        {!allPagesViewed && (
-          <Text style={[styles.hint, { color: colors.textSecondary }]}>
-            {t('section.readAllPages')}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            onComplete()
+          }}
+        >
+          <Text
+            style={[
+              styles.primaryButtonText,
+              { color: allPagesViewed ? '#FDFEFF' : '#809CAD' },
+            ]}
+          >
+            {t('section.completeAndContinue')}
           </Text>
-        )}
+        </TouchableOpacity>
+
+        <TouchableOpacity activeOpacity={0.74} onPress={onExit}>
+          <Text style={styles.exitText}>{t('section.exitActivity')}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   )
@@ -149,85 +117,95 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
     justifyContent: 'space-between',
+    paddingHorizontal: 32,
+    paddingBottom: 40,
   },
-  contentCard: {
-    borderRadius: 16,
-    padding: 24,
-    flex: 1,
-    marginBottom: 24,
+  card: {
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 36,
+    shadowColor: '#28363E',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  header: {
+  cardHeader: {
     marginBottom: 24,
   },
   courseTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    lineHeight: 18,
+    fontWeight: '400',
+    color: '#28363E',
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 30,
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: '#141B1F',
   },
-  textContainer: {
-    flex: 1,
-    marginBottom: 24,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  textHeader: {
-    flex: 1,
-  },
-  textContent: {
-    fontSize: 17,
-    lineHeight: 26,
+  bodyText: {
+    fontSize: 18,
+    lineHeight: 32,
     fontWeight: '400',
-  },
-  speakerButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    color: '#000000',
   },
   pageCounter: {
-    fontSize: 16,
+    marginTop: 24,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 16,
+    color: '#000000',
   },
-  navigationContainer: {
+  navigationRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 100,
+    marginTop: 36,
   },
   navButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: '#B3B3B3',
+    shadowOpacity: 0.28,
     shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
   navButtonDisabled: {
-    opacity: 0.4,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  buttonContainer: {
-    gap: 8,
+  footer: {
+    alignItems: 'center',
+    gap: 36,
+    marginTop: 36,
   },
-  hint: {
-    textAlign: 'center',
-    fontSize: 14,
+  primaryButton: {
+    width: '100%',
+    height: 45,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '700',
+  },
+  exitText: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: '#D62B25',
+    textDecorationLine: 'underline',
   },
 })
 

@@ -291,9 +291,9 @@ const VideoPlayerWithPauses: React.FC<VideoPlayerWithPausesProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 480, // Fixed height for vertical video
+    height: 470,
     backgroundColor: '#000',
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   video: {
