@@ -2,8 +2,13 @@ import Providers from '@/components/Providers/ProviderWrapper'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Stack, usePathname, useRouter, useSegments } from 'expo-router'
+import * as Clarity from '@microsoft/react-native-clarity'
 import React, { useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
+
+Clarity.initialize('x7p00p7a9f', {
+  logLevel: Clarity.LogLevel.None,
+})
 
 function RootNavigator() {
   const { languageVersion } = useLanguage()

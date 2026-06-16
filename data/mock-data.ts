@@ -1,6 +1,6 @@
 export interface Question {
   id: string
-  type: 'multiple_choice' | 'true_false'
+  type: 'multiple_choice' | 'true_false' | 'image_association'
   question: string
   options: string[] // For multiple choice (empty for true/false)
   correctAnswer: number | boolean // index for multiple choice, boolean for true/false
@@ -14,6 +14,7 @@ export type ActivityType =
   | 'true_false'
   | 'text_reading'
   | 'multiple_choice'
+  | 'image_association'
 
 export interface Activity {
   id: string

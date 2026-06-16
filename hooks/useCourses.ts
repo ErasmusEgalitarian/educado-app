@@ -21,7 +21,8 @@ import { useQuery } from '@tanstack/react-query'
 // Detect effective question type for an activity (video_pause can be either MC or TF)
 function getEffectiveQuestionType(
   activity: ApiActivity
-): 'multiple_choice' | 'true_false' {
+): 'multiple_choice' | 'true_false' | 'image_association' {
+  if (activity.type === 'image_association') return 'image_association'
   if (activity.type === 'multiple_choice') return 'multiple_choice'
   if (activity.type === 'true_false') return 'true_false'
   // video_pause: detect from data
@@ -34,7 +35,7 @@ function getEffectiveQuestionType(
 // or number 0/1 (web saves correctAlternativeIndex where 0=Verdadeiro, 1=Falso).
 function coerceCorrectAnswer(
   value: number | boolean | null,
-  effectiveType: 'multiple_choice' | 'true_false'
+  effectiveType: 'multiple_choice' | 'true_false' | 'image_association'
 ): number | boolean {
   if (effectiveType === 'true_false') {
     if (typeof value === 'string') return value === 'true'
@@ -70,7 +71,7 @@ function transformSectionActivity(activity: ApiActivity): Activity {
   return {
     id: activity.id,
     title: activity.title || undefined,
-    type: activity.type === 'video_pause' ? 'video_pause' : effectiveType,
+    type: activity.type === 'video_pause' ? 'video_pause' : activity.type === 'image_association' ? 'image_association' : effectiveType,
     pauseTimestamp: activity.pauseTimestamp ?? undefined,
     textPages: activity.textPages ?? undefined,
     question: activity.question ?? undefined,
@@ -90,10 +91,10 @@ function hasQuestionContent(activity: ApiActivity): boolean {
   return activity.question != null && activity.question.trim().length > 0
 }
 
-// Check if an activity is a question (MC, TF, or video_pause final question without timestamp)
+// Check if an activity is a question (MC, TF, image_association, or video_pause final question without timestamp)
 function isRegularQuestion(a: ApiActivity): boolean {
-  if (a.type === 'multiple_choice' || a.type === 'true_false') {
-    return hasQuestionContent(a)
+  if (a.type === 'multiple_choice' || a.type === 'true_false' || a.type === 'image_association') {
+    return true
   }
   // video_pause without pauseTimestamp = "final question" shown after video
   if (

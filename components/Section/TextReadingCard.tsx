@@ -3,7 +3,7 @@ import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface TextReadingCardProps {
   textPages: string[]
@@ -34,8 +34,10 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
 
   return (
     <View style={styles.container}>
-      <View
+      <ScrollView
         style={[styles.card, { backgroundColor: colors.cardBackgroundLight }]}
+        contentContainerStyle={styles.cardContent}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.courseTitle}>
@@ -49,7 +51,7 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
         <Text style={styles.pageCounter}>
           {currentPage + 1}/{textPages.length}
         </Text>
-      </View>
+      </ScrollView>
 
       <View style={styles.navigationRow}>
         <TouchableOpacity
@@ -117,19 +119,21 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
     paddingHorizontal: 32,
     paddingBottom: 40,
   },
   card: {
+    flex: 1,
     borderRadius: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 36,
     shadowColor: '#28363E',
     shadowOpacity: 0.08,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
+  },
+  cardContent: {
+    paddingHorizontal: 32,
+    paddingVertical: 36,
   },
   cardHeader: {
     marginBottom: 24,

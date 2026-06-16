@@ -54,7 +54,7 @@ export interface ApiActivity {
   id: string
   sectionId: string
   title: string | null
-  type: 'video_pause' | 'true_false' | 'text_reading' | 'multiple_choice'
+  type: 'video_pause' | 'true_false' | 'text_reading' | 'multiple_choice' | 'image_association'
   order: number
   pauseTimestamp: number | null
   textPages: string[] | null
