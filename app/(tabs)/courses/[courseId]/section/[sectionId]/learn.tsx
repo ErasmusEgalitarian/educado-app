@@ -1,3 +1,4 @@
+import ImageAssociationCard from '@/components/Section/ImageAssociationCard'
 import QuestionCard from '@/components/Section/QuestionCard'
 import SectionProgressBar from '@/components/Section/SectionProgressBar'
 import TextReadingCard from '@/components/Section/TextReadingCard'
@@ -397,13 +398,23 @@ export default function SectionLearningScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.questionBlock}>
-              <QuestionCard
-                question={questions[currentQuestionIndex]}
-                onAnswer={handleAnswer}
-                currentQuestion={currentQuestionIndex + 1}
-                totalQuestions={questions.length}
-                onExit={() => setIsExitModalVisible(true)}
-              />
+              {questions[currentQuestionIndex]?.type === 'image_association' ? (
+                <ImageAssociationCard
+                  question={questions[currentQuestionIndex]}
+                  onAnswer={handleAnswer}
+                  currentQuestion={currentQuestionIndex + 1}
+                  totalQuestions={questions.length}
+                  onExit={() => setIsExitModalVisible(true)}
+                />
+              ) : (
+                <QuestionCard
+                  question={questions[currentQuestionIndex]}
+                  onAnswer={handleAnswer}
+                  currentQuestion={currentQuestionIndex + 1}
+                  totalQuestions={questions.length}
+                  onExit={() => setIsExitModalVisible(true)}
+                />
+              )}
             </View>
           </ScrollView>
         )}
