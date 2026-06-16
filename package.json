@@ -27,7 +27,7 @@
     "@react-navigation/elements": "2.9.5",
     "@react-navigation/native": "^7.1.8",
     "@tanstack/react-query": "5.90.20",
-    "expo": "~54.0.33",
+    "expo": "~56.0.12",
     "expo-av": "~16.0.8",
     "expo-constants": "18.0.13",
     "expo-file-system": "~19.0.21",
