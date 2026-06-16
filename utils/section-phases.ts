@@ -79,7 +79,9 @@ function getVideoTitle(section: Section): string {
 function getExerciseTitle(section: Section): string {
   const activityTitle = section.activities?.find(
     (activity) =>
-      activity.type === 'multiple_choice' || activity.type === 'true_false'
+      activity.type === 'multiple_choice' ||
+      activity.type === 'true_false' ||
+      activity.type === 'image_association'
   )?.title
 
   return activityTitle || 'Exercício'
