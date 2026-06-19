@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react'
  */
 export function usePeriodicSync() {
   const { user } = useUser()
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!user) {
