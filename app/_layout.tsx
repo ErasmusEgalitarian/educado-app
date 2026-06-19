@@ -6,16 +6,20 @@ import * as Clarity from '@microsoft/react-native-clarity'
 import React, { useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 
-Clarity.initialize('x7p00p7a9f', {
-  logLevel: Clarity.LogLevel.None,
-})
-
 function RootNavigator() {
   const { languageVersion } = useLanguage()
   const { isAuthenticated, isLoading } = useAuth()
   const segments = useSegments()
   const pathname = usePathname()
   const router = useRouter()
+
+  // Marca a tela atual no Clarity a cada navegacao do expo-router, populando a
+  // aba de telas/heatmaps por rota no dashboard.
+  useEffect(() => {
+    if (pathname) {
+      Clarity.setCurrentScreenName(pathname)
+    }
+  }, [pathname])
 
   useEffect(() => {
     if (isLoading) return
@@ -52,6 +56,22 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  // Late initialization: inicializa o Clarity apos a montagem (a arvore de
+  // views nativa ja existe), evitando capturar um unico frame vazio quando o
+  // init roda cedo demais no carregamento do modulo.
+  useEffect(() => {
+    // Registrar o callback antes do initialize garante que a primeira sessao
+    // seja logada. Confirma no logcat: adb logcat | grep -i clarity
+    Clarity.setOnSessionStartedCallback((sessionId) => {
+      Clarity.getCurrentSessionUrl().then((url) => {
+        console.log('[Clarity] session started:', sessionId, url)
+      })
+    })
+    Clarity.initialize('x7p00p7a9f', {
+      logLevel: Clarity.LogLevel.Verbose,
+    })
+  }, [])
+
   return (
     <Providers>
       <RootNavigator />
