@@ -7,6 +7,8 @@ export default {
     icon: './assets/images/logo_black240.png',
     scheme: 'educado',
     userInterfaceStyle: 'automatic',
+    // Obrigatoria: react-native-reanimated v4 e worklets exigem a New
+    // Architecture (removeram suporte a Old Arch). Nao desligar.
     newArchEnabled: true,
     extra: {
       eas: {
