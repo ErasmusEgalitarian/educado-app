@@ -54,7 +54,12 @@ export interface ApiActivity {
   id: string
   sectionId: string
   title: string | null
-  type: 'video_pause' | 'true_false' | 'text_reading' | 'multiple_choice' | 'image_association'
+  type:
+    | 'video_pause'
+    | 'true_false'
+    | 'text_reading'
+    | 'multiple_choice'
+    | 'image_association'
   order: number
   pauseTimestamp: number | null
   textPages: string[] | null
@@ -293,7 +298,10 @@ export const removeUser = async (): Promise<void> => {
 export const getOrCreateDeviceId = async (): Promise<string> => {
   let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY)
   if (!deviceId) {
-    deviceId = 'device-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+    deviceId =
+      'device-' +
+      Math.random().toString(36).substring(2, 15) +
+      Date.now().toString(36)
     await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId)
   }
   return deviceId
@@ -438,8 +446,7 @@ export const apiGetUserInfo = (): Promise<ApiUser> => {
 export const apiStudentRegister = async (data: {
   firstName: string
   lastName: string
-  email?: string
-  phone?: string
+  phone: string
   dateOfBirth?: string
   deviceId?: string
 }): Promise<ApiStudentAuthResponse> => {
@@ -474,13 +481,13 @@ export const apiStudentDeviceLogin = async (
   return response.json()
 }
 
-export const apiStudentEmailLogin = async (
-  email: string
+export const apiStudentPhoneLogin = async (
+  phone: string
 ): Promise<ApiStudentAuthResponse> => {
-  const response = await fetch(`${API_URL}/student/auth/email-login`, {
+  const response = await fetch(`${API_URL}/student/auth/phone-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ phone }),
   })
 
   if (!response.ok) {
@@ -495,10 +502,9 @@ export const apiStudentEmailLogin = async (
 // Student Profile endpoints
 // ============================================================
 
-export const apiGetStudentProfile =
-  (): Promise<ApiStudentProfile> => {
-    return apiFetch<ApiStudentProfile>('/student/profile')
-  }
+export const apiGetStudentProfile = (): Promise<ApiStudentProfile> => {
+  return apiFetch<ApiStudentProfile>('/student/profile')
+}
 
 export const apiUpdateStudentProfile = (data: {
   firstName?: string
@@ -524,7 +530,12 @@ export const apiDeleteStudentAccount = (): Promise<void> => {
 
 export const apiGetCatalogCourses = (
   params?: Record<string, string>
-): Promise<{ items: ApiCourse[]; page: number; limit: number; total: number }> => {
+): Promise<{
+  items: ApiCourse[]
+  page: number
+  limit: number
+  total: number
+}> => {
   const query = params ? '?' + new URLSearchParams(params).toString() : ''
   return apiFetch<{
     items: ApiCourse[]
@@ -567,7 +578,12 @@ export const apiGetCourse = (courseId: string): Promise<ApiCourse> => {
 
 export const apiEnroll = (
   courseId: string
-): Promise<{ id: string; courseId: string; status: string; enrolledAt: string }> => {
+): Promise<{
+  id: string
+  courseId: string
+  status: string
+  enrolledAt: string
+}> => {
   return apiFetch('/student/enrollments', {
     method: 'POST',
     body: JSON.stringify({ courseId }),
@@ -609,9 +625,7 @@ export const apiGetStudentProgressList = (): Promise<{
 export const apiGetStudentCourseProgress = (
   courseId: string
 ): Promise<ApiEnrollmentDetail> => {
-  return apiFetch<ApiEnrollmentDetail>(
-    `/student/progress/courses/${courseId}`
-  )
+  return apiFetch<ApiEnrollmentDetail>(`/student/progress/courses/${courseId}`)
 }
 
 export const apiSaveStudentSectionProgress = (
@@ -620,10 +634,13 @@ export const apiSaveStudentSectionProgress = (
   score: number,
   totalQuestions: number
 ): Promise<{ sectionId: string; completed: boolean; score: number }> => {
-  return apiFetch(`/student/progress/courses/${courseId}/sections/${sectionId}`, {
-    method: 'POST',
-    body: JSON.stringify({ score, totalQuestions }),
-  })
+  return apiFetch(
+    `/student/progress/courses/${courseId}/sections/${sectionId}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ score, totalQuestions }),
+    }
+  )
 }
 
 export const apiCompleteStudentCourse = (
@@ -687,13 +704,10 @@ export const apiSubmitAnswer = (
   activityId: string,
   answer: number | boolean
 ): Promise<ApiAnswerResult> => {
-  return apiFetch<ApiAnswerResult>(
-    `/student/activities/${activityId}/answer`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ answer }),
-    }
-  )
+  return apiFetch<ApiAnswerResult>(`/student/activities/${activityId}/answer`, {
+    method: 'POST',
+    body: JSON.stringify({ answer }),
+  })
 }
 
 // ============================================================
@@ -745,9 +759,7 @@ export const apiGetCourseLeaderboard = (
   month?: string
 ): Promise<ApiLeaderboardResult> => {
   const qs = month ? `?month=${month}` : ''
-  return apiFetch<ApiLeaderboardResult>(
-    `/leaderboard/courses/${courseId}${qs}`
-  )
+  return apiFetch<ApiLeaderboardResult>(`/leaderboard/courses/${courseId}${qs}`)
 }
 
 // ============================================================
@@ -796,9 +808,7 @@ export const apiGetCourseReviews = (
 export const apiGetStudentCertificates = (): Promise<{
   certificates: ApiCertificate[]
 }> => {
-  return apiFetch<{ certificates: ApiCertificate[] }>(
-    '/student/certificates'
-  )
+  return apiFetch<{ certificates: ApiCertificate[] }>('/student/certificates')
 }
 
 export const getStudentCertificatePdfUrl = (certId: string): string => {
