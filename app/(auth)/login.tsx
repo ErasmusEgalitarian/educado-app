@@ -22,22 +22,22 @@ import {
 
 export default function LoginScreen() {
   const colors = AppColors()
-  const { loginByEmail } = useAuth()
+  const { loginByPhone } = useAuth()
   const { currentLanguage } = useLanguage()
   const router = useRouter()
 
-  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert(t('common.error'), t('auth.loginFillEmail'))
+    if (!phone.trim()) {
+      Alert.alert(t('common.error'), t('auth.loginFillPhone'))
       return
     }
 
     setIsLoading(true)
     try {
-      await loginByEmail(email.trim())
+      await loginByPhone(phone.trim())
       router.replace('/(tabs)')
     } catch (error) {
       if (error instanceof ApiError) {
@@ -93,12 +93,12 @@ export default function LoginScreen() {
             {t('auth.loginTitle')}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {t('auth.loginSubtitleEmail')}
+            {t('auth.loginSubtitlePhone')}
           </Text>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              {t('auth.email')}
+              {t('auth.phone')}
             </Text>
             <TextInput
               style={[
@@ -109,11 +109,11 @@ export default function LoginScreen() {
                   borderColor: colors.border,
                 },
               ]}
-              placeholder={t('auth.emailPlaceholder')}
+              placeholder={t('auth.phonePlaceholder')}
               placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
