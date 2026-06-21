@@ -12,10 +12,9 @@ import { useDropEnrollment, useEnrollmentDetail } from '@/hooks/useProgress'
 import { t } from '@/i18n/config'
 import { clearCourseProgress } from '@/utils/progress-storage'
 import { Ionicons } from '@expo/vector-icons'
-import { useFocusEffect } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useMemo } from 'react'
 import {
   ActivityIndicator,
