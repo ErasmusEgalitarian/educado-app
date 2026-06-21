@@ -319,8 +319,6 @@ export default function SectionLearningScreen() {
     <View
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
-      {phase === 'video' && <View style={styles.mediaBackdrop} />}
-
       <View style={[styles.progressShell, { paddingTop: insets.top + 12 }]}>
         <SectionProgressBar
           currentActivity={currentStep}
@@ -350,6 +348,10 @@ export default function SectionLearningScreen() {
               ]}
               showsVerticalScrollIndicator={false}
             >
+              {/* Decorative teal backdrop lives inside the scroll content so it
+                  scrolls together with the video instead of staying pinned. */}
+              <View style={styles.mediaBackdrop} pointerEvents="none" />
+
               {hasVideoPauseQuestions ? (
                 <VideoPlayerWithPauses
                   key={sectionId}
@@ -572,8 +574,10 @@ const styles = StyleSheet.create({
   mediaBackdrop: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: -6,
+    // The scroll content is inset by videoStage's 32px horizontal padding;
+    // negative insets make the backdrop reach the screen edges (full-bleed).
+    left: -32,
+    right: -32,
     height: 426,
     backgroundColor: '#35A1B1',
     borderBottomRightRadius: 82,
@@ -603,7 +607,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   videoExit: {
-    alignSelf: 'flex-end',
+    alignSelf: 'center',
   },
   primaryButton: {
     width: '100%',
