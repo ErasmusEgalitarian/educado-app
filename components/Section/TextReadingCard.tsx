@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   exitText: {
-    alignSelf: 'flex-end',
+    alignSelf: 'center',
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '600',

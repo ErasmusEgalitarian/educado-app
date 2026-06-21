@@ -1,6 +1,8 @@
+import { AppColors } from '@/constants/theme/AppColors'
 import { Question } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import { useAuth } from '@/contexts/AuthContext'
+import { Ionicons } from '@expo/vector-icons'
 import { Image as ExpoImage } from 'expo-image'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
@@ -28,6 +30,7 @@ const ImageAssociationCard: React.FC<ImageAssociationCardProps> = ({
   totalQuestions,
   onExit,
 }) => {
+  const colors = AppColors()
   const insets = useSafeAreaInsets()
   const { token } = useAuth()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
@@ -45,28 +48,35 @@ const ImageAssociationCard: React.FC<ImageAssociationCardProps> = ({
       }
     : undefined
 
+  // Variable number of options (2–4). Render only the options that exist so a
+  // 3-option activity does not show an empty fourth card.
+  const options = (question.options ?? []).filter(
+    (option) => option != null && option !== ''
+  )
+
+  const isCorrect = selectedIndex === question.correctAnswer
+  const isLastQuestion = currentQuestion >= totalQuestions
+  const correctAnswerText = options[question.correctAnswer as number] ?? ''
+
   const handleSelect = (index: number) => {
     if (hasSubmitted) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelectedIndex(index)
-    setHasSubmitted(true)
+  }
 
-    const isCorrect = index === question.correctAnswer
+  const handleSubmit = () => {
+    if (selectedIndex === null || hasSubmitted) return
+    setHasSubmitted(true)
     Haptics.notificationAsync(
-      isCorrect
+      selectedIndex === question.correctAnswer
         ? Haptics.NotificationFeedbackType.Success
         : Haptics.NotificationFeedbackType.Error
     )
-
-    setTimeout(() => {
-      onAnswer(isCorrect, index)
-    }, 900)
   }
 
-  const options = question.options ?? []
-  const pairs: [string, string][] = []
-  for (let i = 0; i < options.length; i += 2) {
-    pairs.push([options[i], options[i + 1]])
+  const handleAdvance = () => {
+    if (selectedIndex === null) return
+    onAnswer(isCorrect, selectedIndex)
   }
 
   return (
@@ -91,52 +101,123 @@ const ImageAssociationCard: React.FC<ImageAssociationCardProps> = ({
         </Text>
 
         <View style={styles.grid}>
-          {pairs.map(([left, right], rowIndex) => (
-            <View key={rowIndex} style={styles.row}>
-              {[left, right].map((word, colIndex) => {
-                const index = rowIndex * 2 + colIndex
-                const isSelected = selectedIndex === index
-                const isCorrect = index === question.correctAnswer
-                const showCorrect = hasSubmitted && isCorrect
-                const showWrong = hasSubmitted && isSelected && !isCorrect
+          {options.map((word, index) => {
+            const isSelected = selectedIndex === index
+            const isCorrectOption = index === question.correctAnswer
+            const showCorrect = hasSubmitted && isCorrectOption
+            const showWrong = hasSubmitted && isSelected && !isCorrectOption
 
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.optionCard,
-                      showCorrect && styles.optionCorrect,
-                      showWrong && styles.optionWrong,
-                    ]}
-                    onPress={() => handleSelect(index)}
-                    disabled={hasSubmitted}
-                    activeOpacity={0.78}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        (showCorrect || showWrong) && styles.optionTextSelected,
-                      ]}
-                    >
-                      {word}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-          ))}
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.optionCard,
+                  isSelected && !hasSubmitted && styles.optionSelected,
+                  showCorrect && styles.optionCorrect,
+                  showWrong && styles.optionWrong,
+                ]}
+                onPress={() => handleSelect(index)}
+                disabled={hasSubmitted}
+                activeOpacity={0.78}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    (isSelected || showCorrect || showWrong) &&
+                      styles.optionTextSelected,
+                  ]}
+                >
+                  {word}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
         </View>
       </ScrollView>
 
-      {onExit && (
+      {!hasSubmitted ? (
         <View
           style={[
             styles.footer,
             { paddingBottom: Math.max(insets.bottom, 16) },
           ]}
         >
-          <TouchableOpacity activeOpacity={0.74} onPress={onExit}>
-            <Text style={styles.exitText}>{t('section.exitActivity')}</Text>
+          <TouchableOpacity
+            style={[
+              styles.answerButton,
+              {
+                backgroundColor:
+                  selectedIndex === null ? '#C1CFD7' : colors.primary,
+              },
+            ]}
+            activeOpacity={0.82}
+            disabled={selectedIndex === null}
+            onPress={handleSubmit}
+          >
+            <Text
+              style={[
+                styles.answerButtonText,
+                { color: selectedIndex === null ? '#809CAD' : '#FDFEFF' },
+              ]}
+            >
+              {t('section.answer')}
+            </Text>
+          </TouchableOpacity>
+
+          {onExit && (
+            <TouchableOpacity activeOpacity={0.74} onPress={onExit}>
+              <Text style={styles.exitText}>{t('section.exitActivity')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.panel,
+            isCorrect ? styles.panelCorrect : styles.panelWrong,
+            { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+          ]}
+        >
+          <View style={styles.panelHeaderRow}>
+            <Ionicons
+              name={isCorrect ? 'checkmark' : 'close'}
+              size={24}
+              color={isCorrect ? '#3A5313' : '#600000'}
+            />
+            <Text
+              style={[
+                styles.panelTitle,
+                { color: isCorrect ? '#3A5313' : '#600000' },
+              ]}
+            >
+              {isCorrect
+                ? t('section.feedbackCorrectTitle')
+                : t('section.feedbackWrongTitle')}
+            </Text>
+          </View>
+
+          {!isCorrect && (
+            <View style={styles.panelExplain}>
+              <Text style={styles.panelCorrectLabel}>
+                {t('section.correctAlternative')}
+              </Text>
+              <Text style={styles.panelCorrectText}>{correctAnswerText}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.panelButton,
+              { backgroundColor: isCorrect ? '#70A31F' : '#D62B25' },
+            ]}
+            activeOpacity={0.85}
+            onPress={handleAdvance}
+          >
+            <Text style={styles.panelButtonText}>
+              {isLastQuestion
+                ? t('section.finishActivity')
+                : t('section.nextQuestion')}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -178,14 +259,13 @@ const styles = StyleSheet.create({
   },
   grid: {
     width: '100%',
-    gap: 24,
-  },
-  row: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 24,
   },
   optionCard: {
-    flex: 1,
+    width: '48%',
     paddingHorizontal: 12,
     paddingVertical: 24,
     borderRadius: 8,
@@ -199,6 +279,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+  },
+  optionSelected: {
+    backgroundColor: '#EBF0F2',
+    borderColor: '#809CAD',
   },
   optionCorrect: {
     backgroundColor: '#C6F27E',
@@ -220,8 +304,21 @@ const styles = StyleSheet.create({
   },
   footer: {
     width: '100%',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingTop: 12,
+    gap: 24,
+  },
+  answerButton: {
+    width: '100%',
+    height: 45,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  answerButtonText: {
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '700',
   },
   exitText: {
     fontSize: 16,
@@ -229,6 +326,61 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#D62B25',
     textDecorationLine: 'underline',
+    textAlign: 'center',
+  },
+  panel: {
+    marginHorizontal: -32,
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  panelCorrect: {
+    backgroundColor: '#E6FAC8',
+  },
+  panelWrong: {
+    backgroundColor: '#FFDECC',
+  },
+  panelHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  panelTitle: {
+    fontSize: 18,
+    lineHeight: 23.4,
+    fontWeight: '700',
+  },
+  panelExplain: {
+    marginTop: 12,
+    gap: 8,
+  },
+  panelCorrectLabel: {
+    fontSize: 16,
+    lineHeight: 20.8,
+    fontWeight: '600',
+    color: '#600000',
+  },
+  panelCorrectText: {
+    fontSize: 12,
+    lineHeight: 15.6,
+    fontWeight: '400',
+    color: '#600000',
+  },
+  panelButton: {
+    width: '100%',
+    marginTop: 20,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  panelButtonText: {
+    fontSize: 16,
+    lineHeight: 20.8,
+    fontWeight: '600',
+    color: '#FDFEFF',
   },
 })
 
