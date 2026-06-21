@@ -6,7 +6,14 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image as ExpoImage } from 'expo-image'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface QuestionCardProps {
   question: Question
@@ -14,6 +21,20 @@ interface QuestionCardProps {
   currentQuestion: number
   totalQuestions: number
   onExit?: () => void
+  // Title shown as the small line at the top of the question card (course name).
+  courseTitle?: string
+  // Title shown as the bold line below the course name (section / lecture name).
+  sectionTitle?: string
+  // Visual/interaction variant:
+  // - 'standalone' (default): blue question card + "Responder" button (quiz screen).
+  // - 'video': plain question text below a video, options answer on tap (no card,
+  //   no submit button) — used for post-video / in-video quizzes.
+  variant?: 'standalone' | 'video'
+  // When true, the card fills the available height: the question/answers scroll
+  // while the Continue/Exit footer stays pinned to the bottom of the screen.
+  // When false (e.g. a question shown inline during a video pause) the card keeps
+  // its natural stacked layout so it can live inside an outer ScrollView.
+  fillHeight?: boolean
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -22,8 +43,14 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   currentQuestion,
   totalQuestions,
   onExit,
+  courseTitle,
+  sectionTitle,
+  variant = 'standalone',
+  fillHeight = false,
 }) => {
+  const isVideoVariant = variant === 'video'
   const colors = AppColors()
+  const insets = useSafeAreaInsets()
   const { token } = useAuth()
   const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(
     null
@@ -44,32 +71,152 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       : undefined
     : undefined
 
+  const isCorrect = selectedAnswer === question.correctAnswer
+  const isLastQuestion = currentQuestion >= totalQuestions
+
+  const correctAnswerText =
+    question.type === 'true_false'
+      ? question.correctAnswer
+        ? t('section.true')
+        : t('section.false')
+      : (question.options[question.correctAnswer as number] ?? '')
+
   const handleSelectAnswer = (answer: number | boolean) => {
     if (hasSubmitted) return
+
+    // In the video variant there is no separate "Responder" step — tapping an
+    // option answers it immediately and reveals the feedback panel.
+    if (isVideoVariant) {
+      Haptics.notificationAsync(
+        answer === question.correctAnswer
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Error
+      )
+      setSelectedAnswer(answer)
+      setHasSubmitted(true)
+      return
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelectedAnswer(answer)
   }
 
-  const handleContinue = () => {
+  const isTrueFalse = question.type === 'true_false'
+
+  const handleSubmit = () => {
     if (selectedAnswer === null || hasSubmitted) return
 
     setHasSubmitted(true)
-    const isCorrect = selectedAnswer === question.correctAnswer
-
     Haptics.notificationAsync(
-      isCorrect
+      selectedAnswer === question.correctAnswer
         ? Haptics.NotificationFeedbackType.Success
         : Haptics.NotificationFeedbackType.Error
     )
-
-    setTimeout(() => {
-      onAnswer(isCorrect, selectedAnswer)
-    }, 900)
   }
 
-  return (
-    <View style={styles.container}>
-      {imageSource && (
+  // True/false buttons answer immediately on tap (no separate submit step).
+  const handleTrueFalseAnswer = (answer: boolean) => {
+    if (hasSubmitted) return
+    Haptics.notificationAsync(
+      answer === question.correctAnswer
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Error
+    )
+    setSelectedAnswer(answer)
+    setHasSubmitted(true)
+  }
+
+  const handleAdvance = () => {
+    if (selectedAnswer === null) return
+    onAnswer(isCorrect, selectedAnswer)
+  }
+
+  const card = (
+    <View style={styles.card}>
+      {courseTitle ? (
+        <Text style={styles.cardCourse} numberOfLines={1}>
+          {courseTitle}
+        </Text>
+      ) : null}
+      {sectionTitle ? (
+        <Text style={styles.cardSection} numberOfLines={2}>
+          {sectionTitle}
+        </Text>
+      ) : null}
+      <Text style={styles.cardQuestion}>{question.question}</Text>
+      <Text style={styles.cardCounter}>
+        {currentQuestion}/{totalQuestions}
+      </Text>
+    </View>
+  )
+
+  const trueFalseButtons = (
+    <View style={styles.trueFalseRow}>
+      <TouchableOpacity
+        style={[
+          styles.trueFalseButton,
+          { backgroundColor: '#C84B4B' },
+          selectedAnswer === false && styles.selectedTrueFalse,
+        ]}
+        onPress={() => handleTrueFalseAnswer(false)}
+        disabled={hasSubmitted}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="close" size={44} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.trueFalseButton,
+          { backgroundColor: '#8FB442' },
+          selectedAnswer === true && styles.selectedTrueFalse,
+        ]}
+        onPress={() => handleTrueFalseAnswer(true)}
+        disabled={hasSubmitted}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="checkmark" size={44} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
+  )
+
+  const trueFalseBody = isVideoVariant ? (
+    <>
+      <Text style={styles.videoStatement}>{question.question}</Text>
+      {trueFalseButtons}
+    </>
+  ) : (
+    <>
+      {imageSource ? (
+        <View style={styles.tfImageContainer}>
+          <ExpoImage
+            source={imageSource}
+            style={styles.image}
+            contentFit="cover"
+          />
+        </View>
+      ) : (
+        <View style={styles.tfTeal} pointerEvents="none" />
+      )}
+
+      <Text style={styles.tfStatement}>{question.question}</Text>
+      <Text style={styles.tfCounter}>
+        {currentQuestion}/{totalQuestions}
+      </Text>
+
+      {trueFalseButtons}
+    </>
+  )
+
+  // The video quiz shows the question as plain text above the options (no card,
+  // no counter — the progress is conveyed by the top progress bar).
+  const plainQuestion = (
+    <Text style={styles.videoStatement}>{question.question}</Text>
+  )
+
+  const multipleChoiceBody = (
+    <>
+      {!isVideoVariant && imageSource && (
         <View style={styles.imageContainer}>
           <ExpoImage
             source={imageSource}
@@ -79,126 +226,192 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         </View>
       )}
 
-      <Text style={styles.questionText}>{question.question}</Text>
+      {isVideoVariant ? (
+        plainQuestion
+      ) : (
+        <View style={styles.cardWrap}>
+          <View style={styles.tealBackdrop} pointerEvents="none" />
+          {card}
+        </View>
+      )}
 
-      <View style={styles.answersContainer}>
-        {question.type === 'true_false' ? (
-          <View style={styles.trueFalseRow}>
+      <View
+        style={[
+          styles.answersContainer,
+          isVideoVariant && styles.answersContainerVideo,
+        ]}
+      >
+        {question.options.map((option, index) => {
+          const isSelected = selectedAnswer === index
+
+          return (
             <TouchableOpacity
+              key={`${question.id}-${index}`}
               style={[
-                styles.trueFalseButton,
-                { backgroundColor: '#C84B4B' },
-                selectedAnswer === false && styles.selectedTrueFalse,
+                styles.answerButton,
+                isSelected && styles.answerButtonSelected,
               ]}
-              onPress={() => handleSelectAnswer(false)}
+              onPress={() => handleSelectAnswer(index)}
               disabled={hasSubmitted}
-              activeOpacity={0.8}
+              activeOpacity={0.78}
             >
-              <Ionicons name="close" size={72} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.trueFalseButton,
-                { backgroundColor: '#8FB442' },
-                selectedAnswer === true && styles.selectedTrueFalse,
-              ]}
-              onPress={() => handleSelectAnswer(true)}
-              disabled={hasSubmitted}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="checkmark" size={72} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          question.options.map((option, index) => {
-            const isSelected = selectedAnswer === index
-            const isCorrect = index === question.correctAnswer
-            const showCorrect = hasSubmitted && isCorrect
-            const showWrong = hasSubmitted && isSelected && !isCorrect
-
-            return (
-              <TouchableOpacity
-                key={`${question.id}-${index}`}
+              <View
                 style={[
-                  styles.answerButton,
-                  isSelected && !hasSubmitted && styles.answerButtonSelected,
-                  showCorrect && styles.answerButtonCorrect,
-                  showWrong && styles.answerButtonWrong,
+                  styles.optionBadge,
+                  isSelected && styles.optionBadgeSelected,
                 ]}
-                onPress={() => handleSelectAnswer(index)}
-                disabled={hasSubmitted}
-                activeOpacity={0.78}
               >
-                <View
-                  style={[
-                    styles.optionBadge,
-                    isSelected || hasSubmitted
-                      ? styles.optionBadgeSelected
-                      : undefined,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.optionBadgeText,
-                      isSelected || hasSubmitted
-                        ? styles.optionBadgeTextSelected
-                        : undefined,
-                    ]}
-                  >
-                    {String.fromCharCode(65 + index)}
-                  </Text>
-                </View>
-
                 <Text
                   style={[
-                    styles.answerText,
-                    (showCorrect || showWrong) && styles.answerTextInverse,
+                    styles.optionBadgeText,
+                    isSelected && styles.optionBadgeTextSelected,
                   ]}
                 >
-                  {option}
+                  {String.fromCharCode(65 + index)}
                 </Text>
-              </TouchableOpacity>
-            )
-          })
-        )}
-      </View>
+              </View>
 
-      <TouchableOpacity
-        style={[
-          styles.continueButton,
-          {
-            backgroundColor:
-              selectedAnswer === null || hasSubmitted
-                ? '#C1CFD7'
-                : colors.primary,
-          },
-        ]}
-        activeOpacity={0.82}
-        disabled={selectedAnswer === null || hasSubmitted}
-        onPress={handleContinue}
-      >
-        <Text
+              <Text style={styles.answerText}>{option}</Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </>
+  )
+
+  const body = isTrueFalse ? trueFalseBody : multipleChoiceBody
+
+  const submitFooter = (
+    <>
+      {!isTrueFalse && !isVideoVariant && (
+        <TouchableOpacity
           style={[
-            styles.continueButtonText,
+            styles.continueButton,
             {
-              color:
-                selectedAnswer === null || hasSubmitted ? '#809CAD' : '#FDFEFF',
+              backgroundColor:
+                selectedAnswer === null ? '#C1CFD7' : colors.primary,
             },
           ]}
+          activeOpacity={0.82}
+          disabled={selectedAnswer === null}
+          onPress={handleSubmit}
         >
-          {t('common.continue')}
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={styles.counterText}>
-        {currentQuestion}/{totalQuestions}
-      </Text>
+          <Text
+            style={[
+              styles.continueButtonText,
+              { color: selectedAnswer === null ? '#809CAD' : '#FDFEFF' },
+            ]}
+          >
+            {t('section.answer')}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {onExit && (
         <TouchableOpacity activeOpacity={0.74} onPress={onExit}>
           <Text style={styles.exitText}>{t('section.exitActivity')}</Text>
         </TouchableOpacity>
+      )}
+    </>
+  )
+
+  const feedbackPanel = (
+    <>
+      <View style={styles.panelHeaderRow}>
+        <Ionicons
+          name={isCorrect ? 'checkmark' : 'close'}
+          size={24}
+          color={isCorrect ? '#3A5313' : '#600000'}
+        />
+        <Text
+          style={[
+            styles.panelTitle,
+            { color: isCorrect ? '#3A5313' : '#600000' },
+          ]}
+        >
+          {isCorrect
+            ? t('section.feedbackCorrectTitle')
+            : t('section.feedbackWrongTitle')}
+        </Text>
+      </View>
+
+      {!isCorrect && (
+        <View style={styles.panelExplain}>
+          <Text style={styles.panelCorrectLabel}>
+            {t('section.correctAlternative')}
+          </Text>
+          <Text style={styles.panelCorrectText}>{correctAnswerText}</Text>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[
+          styles.panelButton,
+          { backgroundColor: isCorrect ? '#70A31F' : '#D62B25' },
+        ]}
+        activeOpacity={0.85}
+        onPress={handleAdvance}
+      >
+        <Text style={styles.panelButtonText}>
+          {isLastQuestion
+            ? t('section.finishActivity')
+            : t('section.nextQuestion')}
+        </Text>
+      </TouchableOpacity>
+    </>
+  )
+
+  if (!fillHeight) {
+    return (
+      <View style={styles.container}>
+        {body}
+        {!hasSubmitted ? (
+          <View style={styles.inlineFooter}>{submitFooter}</View>
+        ) : (
+          <View
+            style={[
+              styles.panel,
+              isCorrect ? styles.panelCorrect : styles.panelWrong,
+              styles.panelInline,
+            ]}
+          >
+            {feedbackPanel}
+          </View>
+        )}
+      </View>
+    )
+  }
+
+  return (
+    <View style={styles.fillContainer}>
+      <ScrollView
+        style={styles.fillScroll}
+        contentContainerStyle={styles.fillScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {body}
+      </ScrollView>
+
+      {!hasSubmitted ? (
+        <View
+          style={[
+            styles.pinnedFooter,
+            { paddingBottom: Math.max(insets.bottom, 16) },
+          ]}
+        >
+          {submitFooter}
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.panel,
+            isCorrect ? styles.panelCorrect : styles.panelWrong,
+            styles.panelPinned,
+            { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+          ]}
+        >
+          {feedbackPanel}
+        </View>
       )}
     </View>
   )
@@ -207,7 +420,27 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    alignItems: 'center',
+    alignItems: 'stretch',
+  },
+  fillContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  fillScroll: {
+    flex: 1,
+  },
+  fillScrollContent: {
+    alignItems: 'stretch',
+    paddingBottom: 16,
+  },
+  pinnedFooter: {
+    width: '100%',
+    alignItems: 'stretch',
+    paddingTop: 12,
+  },
+  inlineFooter: {
+    width: '100%',
+    alignItems: 'stretch',
   },
   imageContainer: {
     width: '100%',
@@ -221,18 +454,67 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  questionText: {
-    fontSize: 18,
-    lineHeight: 30,
+  cardWrap: {
+    width: '100%',
+  },
+  tealBackdrop: {
+    position: 'absolute',
+    top: -20,
+    left: -32,
+    right: -32,
+    bottom: -30,
+    backgroundColor: '#35A1B1',
+    borderBottomRightRadius: 82,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: '#D8EFF3',
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingTop: 36,
+    paddingBottom: 36,
+  },
+  cardCourse: {
+    fontSize: 12,
+    lineHeight: 15.6,
     fontWeight: '400',
-    color: '#000000',
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 12,
+    color: '#28363E',
+  },
+  cardSection: {
+    fontSize: 14,
+    lineHeight: 18.2,
+    fontWeight: '600',
+    color: '#141B1F',
+    marginTop: 6,
+  },
+  cardQuestion: {
+    fontSize: 18,
+    lineHeight: 23.4,
+    fontWeight: '400',
+    color: '#141B1F',
+    marginTop: 28,
+  },
+  cardCounter: {
+    fontSize: 14,
+    lineHeight: 18.2,
+    fontWeight: '600',
+    color: '#141B1F',
+    marginTop: 20,
   },
   answersContainer: {
     width: '100%',
+    gap: 12,
+    marginTop: 40,
+  },
+  answersContainerVideo: {
+    marginTop: 20,
     gap: 8,
+  },
+  videoStatement: {
+    fontSize: 18,
+    lineHeight: 23.4,
+    fontWeight: '400',
+    color: '#141B1F',
   },
   answerButton: {
     width: '100%',
@@ -245,19 +527,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FDFEFF',
+    backgroundColor: '#FAFEFF',
   },
   answerButtonSelected: {
-    borderColor: '#35A1B1',
-    borderWidth: 2,
-  },
-  answerButtonCorrect: {
-    backgroundColor: '#8FB442',
-    borderColor: '#8FB442',
-  },
-  answerButtonWrong: {
-    backgroundColor: '#C84B4B',
-    borderColor: '#C84B4B',
+    backgroundColor: '#EBF0F2',
+    borderColor: '#809CAD',
   },
   optionBadge: {
     width: 31,
@@ -270,14 +544,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionBadgeSelected: {
-    backgroundColor: '#246670',
-    borderColor: '#246670',
+    backgroundColor: '#3A4E5A',
+    borderColor: '#3A4E5A',
   },
   optionBadgeText: {
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 18.2,
     fontWeight: '600',
-    color: '#4E6879',
+    color: '#809CAD',
   },
   optionBadgeTextSelected: {
     color: '#FDFEFF',
@@ -285,21 +559,46 @@ const styles = StyleSheet.create({
   answerText: {
     flex: 1,
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 18.2,
     fontWeight: '400',
     color: '#141B1F',
   },
-  answerTextInverse: {
-    color: '#FDFEFF',
+  tfImageContainer: {
+    width: '100%',
+    height: 190,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#D9D9D9',
+  },
+  tfTeal: {
+    height: 200,
+    marginHorizontal: -32,
+    backgroundColor: '#35A1B1',
+    borderBottomRightRadius: 82,
+  },
+  tfStatement: {
+    fontSize: 18,
+    lineHeight: 23.4,
+    fontWeight: '400',
+    color: '#141B1F',
+    marginTop: 37,
+  },
+  tfCounter: {
+    fontSize: 14,
+    lineHeight: 18.2,
+    fontWeight: '600',
+    color: '#141B1F',
+    marginTop: 24,
   },
   trueFalseRow: {
     width: '100%',
     flexDirection: 'row',
     gap: 10,
+    marginTop: 36,
   },
   trueFalseButton: {
     flex: 1,
-    height: 220,
+    height: 277,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -320,20 +619,76 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     fontWeight: '700',
   },
-  counterText: {
-    marginTop: 16,
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '600',
-    color: '#000000',
-  },
   exitText: {
     marginTop: 28,
+    alignSelf: 'flex-end',
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '600',
     color: '#D62B25',
     textDecorationLine: 'underline',
+  },
+  panel: {
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  panelInline: {
+    alignSelf: 'stretch',
+    marginHorizontal: -32,
+    marginTop: 24,
+    paddingBottom: 40,
+  },
+  panelPinned: {
+    marginHorizontal: -32,
+  },
+  panelCorrect: {
+    backgroundColor: '#E6FAC8',
+  },
+  panelWrong: {
+    backgroundColor: '#FFDECC',
+  },
+  panelHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  panelTitle: {
+    fontSize: 18,
+    lineHeight: 23.4,
+    fontWeight: '700',
+  },
+  panelExplain: {
+    marginTop: 12,
+    gap: 8,
+  },
+  panelCorrectLabel: {
+    fontSize: 16,
+    lineHeight: 20.8,
+    fontWeight: '600',
+    color: '#600000',
+  },
+  panelCorrectText: {
+    fontSize: 12,
+    lineHeight: 15.6,
+    fontWeight: '400',
+    color: '#600000',
+  },
+  panelButton: {
+    width: '100%',
+    marginTop: 20,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  panelButtonText: {
+    fontSize: 16,
+    lineHeight: 20.8,
+    fontWeight: '600',
+    color: '#FDFEFF',
   },
 })
 
