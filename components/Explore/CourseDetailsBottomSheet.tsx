@@ -22,13 +22,17 @@ const CourseDetailsBottomSheet = forwardRef<
   const insets = useSafeAreaInsets()
   const snapPoints = useMemo(() => ['85%'], [])
 
-  if (!course) return null
+  // NOTE: do not early-return when there is no course yet. The BottomSheet must
+  // always be mounted so the parent's ref is attached and `expand()` works the
+  // first time a course is tapped (state update + expand happen in the same
+  // tick). We guard the *content* instead.
 
   return (
     <BottomSheet
       ref={ref}
       index={-1}
       snapPoints={snapPoints}
+      enableDynamicSizing={false}
       enablePanDownToClose
       backgroundStyle={{
         backgroundColor: colors.background,
@@ -40,107 +44,136 @@ const CourseDetailsBottomSheet = forwardRef<
       }}
       handleIndicatorStyle={{ backgroundColor: colors.textSecondary }}
     >
-      <BottomSheetView style={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 24) + 60 }]}>
-        <View style={styles.courseContainer}>
-          {/* Course Title */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>
-              {course.title}
-            </Text>
-          </View>
-
-          {/* Course Meta Information */}
-          <View style={styles.metaContainer}>
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="school-outline"
-                size={18}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {course.shortDescription}
-              </Text>
-            </View>
-
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {course.estimatedTime}
-              </Text>
-            </View>
-
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="trending-up"
-                size={18}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {getDifficultyLabel(course.difficulty)}
-              </Text>
-            </View>
-
-            <View style={styles.metaRow}>
-              {renderStars(course.rating || 0)}
-              <Text style={[styles.ratingText, { color: colors.textPrimary }]}>
-                {course.rating?.toFixed(1)}
-              </Text>
-            </View>
-
-            {course.enrollmentCount != null && course.enrollmentCount > 0 && (
-              <View style={styles.metaRow}>
-                <Ionicons
-                  name="people-outline"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                  {t('explore.enrolledCount', { count: course.enrollmentCount })}
+      <BottomSheetView
+        style={[
+          styles.contentContainer,
+          { paddingBottom: Math.max(insets.bottom, 24) + 60 },
+        ]}
+      >
+        {course && (
+          <>
+            <View style={styles.courseContainer}>
+              {/* Course Title */}
+              <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.textPrimary }]}>
+                  {course.title}
                 </Text>
               </View>
-            )}
-          </View>
 
-          {/* Course Description */}
-          <View style={styles.descriptionContainer}>
-            <Text style={[styles.description, { color: colors.textPrimary }]}>
-              {course.description}
-            </Text>
-          </View>
-
-          {/* Tags */}
-          {course.tags && course.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {course.tags.map((tag, index) => (
-                <View
-                  key={index}
-                  style={[styles.tag, { backgroundColor: '#E0F2FE' }]}
-                >
-                  <Text style={styles.tagText}>#{tag}</Text>
+              {/* Course Meta Information */}
+              <View style={styles.metaContainer}>
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="school-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[styles.metaText, { color: colors.textSecondary }]}
+                  >
+                    {course.shortDescription}
+                  </Text>
                 </View>
-              ))}
+
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[styles.metaText, { color: colors.textSecondary }]}
+                  >
+                    {course.estimatedTime}
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="trending-up"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[styles.metaText, { color: colors.textSecondary }]}
+                  >
+                    {getDifficultyLabel(course.difficulty)}
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  {renderStars(course.rating || 0)}
+                  <Text
+                    style={[styles.ratingText, { color: colors.textPrimary }]}
+                  >
+                    {course.rating?.toFixed(1)}
+                  </Text>
+                </View>
+
+                {course.enrollmentCount != null &&
+                  course.enrollmentCount > 0 && (
+                    <View style={styles.metaRow}>
+                      <Ionicons
+                        name="people-outline"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.metaText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t('explore.enrolledCount', {
+                          count: course.enrollmentCount,
+                        })}
+                      </Text>
+                    </View>
+                  )}
+              </View>
+
+              {/* Course Description */}
+              <View style={styles.descriptionContainer}>
+                <Text
+                  style={[styles.description, { color: colors.textPrimary }]}
+                >
+                  {course.description}
+                </Text>
+              </View>
+
+              {/* Tags */}
+              {course.tags && course.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  {course.tags.map((tag, index) => (
+                    <View
+                      key={index}
+                      style={[styles.tag, { backgroundColor: '#E0F2FE' }]}
+                    >
+                      <Text style={styles.tagText}>#{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
-          )}
-        </View>
-        {/* Enroll Button */}
-        <TouchableOpacity
-          style={[
-            styles.enrollButton,
-            {
-              backgroundColor: isEnrolled ? colors.primary : colors.secondary,
-            },
-          ]}
-          onPress={isEnrolled ? onViewCourse : onEnroll}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.enrollButtonText}>
-            {isEnrolled ? t('explore.viewCourse') : t('explore.enrollNow')}
-          </Text>
-        </TouchableOpacity>
+            {/* Enroll Button */}
+            <TouchableOpacity
+              style={[
+                styles.enrollButton,
+                {
+                  backgroundColor: isEnrolled
+                    ? colors.primary
+                    : colors.secondary,
+                },
+              ]}
+              onPress={isEnrolled ? onViewCourse : onEnroll}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.enrollButtonText}>
+                {isEnrolled ? t('explore.viewCourse') : t('explore.enrollNow')}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </BottomSheetView>
     </BottomSheet>
   )

@@ -158,7 +158,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           { backgroundColor: '#C84B4B' },
           selectedAnswer === false && styles.selectedTrueFalse,
         ]}
-        onPress={() => handleTrueFalseAnswer(false)}
+        onPress={() =>
+          isVideoVariant
+            ? handleTrueFalseAnswer(false)
+            : handleSelectAnswer(false)
+        }
         disabled={hasSubmitted}
         activeOpacity={0.85}
       >
@@ -171,7 +175,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           { backgroundColor: '#8FB442' },
           selectedAnswer === true && styles.selectedTrueFalse,
         ]}
-        onPress={() => handleTrueFalseAnswer(true)}
+        onPress={() =>
+          isVideoVariant
+            ? handleTrueFalseAnswer(true)
+            : handleSelectAnswer(true)
+        }
         disabled={hasSubmitted}
         activeOpacity={0.85}
       >
@@ -243,13 +251,20 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       >
         {question.options.map((option, index) => {
           const isSelected = selectedAnswer === index
+          const isCorrectOption = index === question.correctAnswer
+          // After submitting, the confirmation colour lands on the answer
+          // itself: the correct option turns green, a wrong pick turns red.
+          const showCorrect = hasSubmitted && isCorrectOption
+          const showWrong = hasSubmitted && isSelected && !isCorrectOption
 
           return (
             <TouchableOpacity
               key={`${question.id}-${index}`}
               style={[
                 styles.answerButton,
-                isSelected && styles.answerButtonSelected,
+                isSelected && !hasSubmitted && styles.answerButtonSelected,
+                showCorrect && styles.answerButtonCorrect,
+                showWrong && styles.answerButtonWrong,
               ]}
               onPress={() => handleSelectAnswer(index)}
               disabled={hasSubmitted}
@@ -258,13 +273,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               <View
                 style={[
                   styles.optionBadge,
-                  isSelected && styles.optionBadgeSelected,
+                  isSelected && !hasSubmitted && styles.optionBadgeSelected,
+                  showCorrect && styles.optionBadgeCorrect,
+                  showWrong && styles.optionBadgeWrong,
                 ]}
               >
                 <Text
                   style={[
                     styles.optionBadgeText,
-                    isSelected && styles.optionBadgeTextSelected,
+                    (isSelected || showCorrect || showWrong) &&
+                      styles.optionBadgeTextSelected,
                   ]}
                 >
                   {String.fromCharCode(65 + index)}
@@ -283,7 +301,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
   const submitFooter = (
     <>
-      {!isTrueFalse && !isVideoVariant && (
+      {!isVideoVariant && (
         <TouchableOpacity
           style={[
             styles.continueButton,
@@ -533,6 +551,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF0F2',
     borderColor: '#809CAD',
   },
+  answerButtonCorrect: {
+    backgroundColor: '#C6F27E',
+    borderColor: '#70A31F',
+  },
+  answerButtonWrong: {
+    backgroundColor: '#F28985',
+    borderColor: '#D62B25',
+  },
   optionBadge: {
     width: 31,
     height: 30,
@@ -546,6 +572,14 @@ const styles = StyleSheet.create({
   optionBadgeSelected: {
     backgroundColor: '#3A4E5A',
     borderColor: '#3A4E5A',
+  },
+  optionBadgeCorrect: {
+    backgroundColor: '#70A31F',
+    borderColor: '#70A31F',
+  },
+  optionBadgeWrong: {
+    backgroundColor: '#D62B25',
+    borderColor: '#D62B25',
   },
   optionBadgeText: {
     fontSize: 14,
@@ -621,7 +655,7 @@ const styles = StyleSheet.create({
   },
   exitText: {
     marginTop: 28,
-    alignSelf: 'flex-end',
+    alignSelf: 'center',
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '600',
