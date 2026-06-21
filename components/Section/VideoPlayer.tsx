@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native'
 
@@ -32,6 +33,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasCompletedMinimum, setHasCompletedMinimum] = useState(false)
+  const [hasEnded, setHasEnded] = useState(false)
 
   // If no video URL, show placeholder and auto-complete
   const hasVideo = !!videoUrl && videoUrl.length > 0
@@ -121,6 +123,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             setHasCompletedMinimum(true)
             onComplete()
           }
+
+          // Reveal the "watch again" overlay once the video reaches the end.
+          if (percentage >= 99.5) {
+            setHasEnded(true)
+          }
         }
       } catch {
         // Ignore transient errors
@@ -179,6 +186,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     )
   }
 
+  const handleReplay = () => {
+    try {
+      player.currentTime = 0
+      player.play()
+      setHasEnded(false)
+    } catch {
+      // Ignore if player is already released
+    }
+  }
+
   return (
     <View style={styles.container}>
       <VideoView
@@ -190,6 +207,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         allowsPictureInPicture
         nativeControls
       />
+
+      {hasEnded && (
+        <TouchableOpacity
+          style={styles.replayOverlay}
+          activeOpacity={0.85}
+          onPress={handleReplay}
+        >
+          <Ionicons name="refresh" size={32} color="#FDFEFF" />
+          <Text style={styles.replayText}>{t('section.watchAgain')}</Text>
+        </TouchableOpacity>
+      )}
 
       {isLoading && (
         <View
@@ -224,6 +252,19 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  replayOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(20, 27, 31, 0.55)',
+  },
+  replayText: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: '#FDFEFF',
   },
   loadingText: {
     marginTop: 12,

@@ -28,7 +28,10 @@ export function getSectionPhaseItems(section: Section): SectionPhaseItem[] {
     })
   }
 
-  if (hasQuestions(section)) {
+  // Only add a standalone "exercise" phase when the section has standalone
+  // questions. Video-pause questions live inside the video, so they must not
+  // create an empty separate exercise step.
+  if ((section.questions?.length ?? 0) > 0) {
     items.push({
       id: 'questions',
       kind: 'exercise',

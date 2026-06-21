@@ -80,7 +80,9 @@ export default function CertificateScreen() {
     try {
       setIsDownloading(true)
 
-      const { status } = await MediaLibrary.requestPermissionsAsync()
+      // Só precisamos gravar na galeria (não ler), então pedimos permissão
+      // write-only — menos atrito e evita as permissões granulares de leitura.
+      const { status } = await MediaLibrary.requestPermissionsAsync(true)
       if (status !== 'granted') {
         Alert.alert(
           t('certificate.permissionRequired'),
@@ -98,7 +100,10 @@ export default function CertificateScreen() {
           quality: 1,
         })
 
-        await MediaLibrary.createAssetAsync(uri)
+        // saveToLibraryAsync grava direto (write-only); diferente de
+        // createAssetAsync, não lê o asset de volta nem mexe em álbum — passo
+        // que falha com frequência no scoped storage do Android 10.
+        await MediaLibrary.saveToLibraryAsync(uri)
 
         Alert.alert(t('certificate.success'), t('certificate.savedSuccess'), [
           { text: t('common.ok') },
@@ -109,10 +114,15 @@ export default function CertificateScreen() {
         ])
       }
     } catch (error) {
-      console.error('Error saving certificate:', error)
-      Alert.alert(t('common.error'), t('certificate.saveError'), [
-        { text: t('common.ok') },
-      ])
+      // Mostra a causa real (antes era engolida num alerta genérico): assim o
+      // próximo teste revela o erro na própria tela, sem depender do logcat.
+      const message = error instanceof Error ? error.message : String(error)
+      console.error('Error saving certificate:', message)
+      Alert.alert(
+        t('common.error'),
+        `${t('certificate.saveError')}\n\n${message}`,
+        [{ text: t('common.ok') }]
+      )
     } finally {
       setIsDownloading(false)
     }
