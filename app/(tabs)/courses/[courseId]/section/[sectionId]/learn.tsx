@@ -84,6 +84,15 @@ export default function SectionLearningScreen() {
     const availablePhaseIds = new Set(phaseItems.map((item) => item.id))
 
     if (requestedPhase && availablePhaseIds.has(requestedPhase)) {
+      // The "questions" phase only renders standalone questions. When a section's
+      // questions live inside the video (video_pause), section.questions is empty,
+      // so route the "exercise" entry to the video where those questions play.
+      if (
+        requestedPhase === 'questions' &&
+        (section.questions?.length ?? 0) === 0
+      ) {
+        return section.videoUrl ? 'video' : defaultPhase
+      }
       return requestedPhase
     }
 
@@ -136,13 +145,6 @@ export default function SectionLearningScreen() {
   )
   const allQuestionsCount = questions.length + videoPauseQuestions.length
   const allAnswers = [...pauseAnswers, ...answers]
-  const currentPhaseIndex =
-    phase === 'results'
-      ? Math.max(phaseItems.length - 1, 0)
-      : Math.max(
-          phaseItems.findIndex((item) => item.id === phase),
-          0
-        )
 
   const handleTextComplete = () => {
     if (hasVideo) {
@@ -263,24 +265,66 @@ export default function SectionLearningScreen() {
     allQuestionsCount > 0
       ? Math.round((correctAnswersCount / allQuestionsCount) * 100)
       : 100
-  const isMediaStage = phase === 'video' || phase === 'questions'
-  const isQuestionLocked =
-    phase === 'video' &&
+
+  // The video is "unlocked" once it has been watched far enough. After that the
+  // post-video question is shown inline below the (replayable) video, mirroring
+  // the design — there is no separate "ready to answer" button.
+  const videoUnlocked = hasVideoPauseQuestions
+    ? videoWatchPercentage >= 100
+    : videoWatchPercentage >= 80
+  const currentVideoQuestion = questions[currentQuestionIndex]
+  const showInlineVideoQuestion =
+    videoUnlocked &&
     !isPausedForQuestion &&
-    (hasVideoPauseQuestions
-      ? videoWatchPercentage < 100
-      : videoWatchPercentage < 80)
+    hasQuestions &&
+    currentVideoQuestion?.type !== 'image_association'
+  const showVideoContinue =
+    videoUnlocked &&
+    !isPausedForQuestion &&
+    (!hasQuestions || currentVideoQuestion?.type === 'image_association')
+
+  // Progress bar advances one segment per step, where a step is the reading
+  // phase, the video phase, and each individual question (pause or standalone) —
+  // so the segmented bar mirrors the design (e.g. question 1 of 5 → 20%).
+  const hasTextPhase = phaseItems.some((item) => item.id === 'text')
+  const hasVideoPhase = phaseItems.some((item) => item.id === 'video')
+  const preQuestionSteps = (hasTextPhase ? 1 : 0) + (hasVideoPhase ? 1 : 0)
+  const totalSteps = Math.max(
+    preQuestionSteps + videoPauseQuestions.length + questions.length,
+    1
+  )
+
+  let currentStep = 0
+  if (phase === 'text') {
+    currentStep = 0
+  } else if (phase === 'results') {
+    currentStep = totalSteps - 1
+  } else if (phase === 'video') {
+    if (isPausedForQuestion && currentPauseQuestionIndex !== null) {
+      currentStep = preQuestionSteps + currentPauseQuestionIndex
+    } else if (showInlineVideoQuestion) {
+      currentStep =
+        preQuestionSteps + videoPauseQuestions.length + currentQuestionIndex
+    } else {
+      // Watching the video (the video step itself).
+      currentStep = (hasTextPhase ? 1 : 0) + pauseAnswers.length
+    }
+  } else {
+    // Standalone questions phase.
+    currentStep =
+      preQuestionSteps + videoPauseQuestions.length + currentQuestionIndex
+  }
 
   return (
     <View
       style={[styles.container, { backgroundColor: colors.backgroundPrimary }]}
     >
-      {isMediaStage && <View style={styles.mediaBackdrop} />}
+      {phase === 'video' && <View style={styles.mediaBackdrop} />}
 
       <View style={[styles.progressShell, { paddingTop: insets.top + 12 }]}>
         <SectionProgressBar
-          currentActivity={currentPhaseIndex}
-          totalActivities={Math.max(phaseItems.length, 1)}
+          currentActivity={currentStep}
+          totalActivities={totalSteps}
           onBack={() => setIsExitModalVisible(true)}
           textColor={phase === 'text' ? '#4E6879' : '#141B1F'}
         />
@@ -298,85 +342,82 @@ export default function SectionLearningScreen() {
         )}
 
         {phase === 'video' && (
-          <ScrollView
-            contentContainerStyle={[
-              styles.videoContent,
-              { paddingBottom: Math.max(insets.bottom, 32) + 24 },
-            ]}
-            showsVerticalScrollIndicator={false}
-          >
-            {hasVideoPauseQuestions ? (
-              <VideoPlayerWithPauses
-                key={sectionId}
-                videoUrl={section.videoUrl ?? ''}
-                pauseTimestamps={videoPauseQuestions.map(
-                  (item) => item.pauseTimestamp
-                )}
-                onPauseReached={handlePauseReached}
-                isPaused={isPausedForQuestion}
-                onResume={() => setIsPausedForQuestion(false)}
-                onVideoComplete={handleVideoComplete}
-              />
-            ) : (
-              <VideoPlayer
-                key={sectionId}
-                videoUrl={section.videoUrl ?? ''}
-                onProgressUpdate={setVideoWatchPercentage}
-                minimumWatchPercentage={80}
-              />
-            )}
-
-            {isPausedForQuestion && currentPauseQuestionIndex !== null ? (
-              <View style={styles.questionBlock}>
-                <QuestionCard
-                  question={
-                    videoPauseQuestions[currentPauseQuestionIndex].question
-                  }
-                  onAnswer={handlePauseQuestionAnswer}
-                  currentQuestion={currentPauseQuestionIndex + 1}
-                  totalQuestions={videoPauseQuestions.length}
-                  onExit={() => setIsExitModalVisible(true)}
+          <View style={styles.videoStage}>
+            <ScrollView
+              contentContainerStyle={[
+                styles.videoContent,
+                { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+              ]}
+              showsVerticalScrollIndicator={false}
+            >
+              {hasVideoPauseQuestions ? (
+                <VideoPlayerWithPauses
+                  key={sectionId}
+                  videoUrl={section.videoUrl ?? ''}
+                  pauseTimestamps={videoPauseQuestions.map(
+                    (item) => item.pauseTimestamp
+                  )}
+                  onPauseReached={handlePauseReached}
+                  isPaused={isPausedForQuestion}
+                  onResume={() => setIsPausedForQuestion(false)}
+                  onVideoComplete={handleVideoComplete}
                 />
-              </View>
-            ) : (
-              <View style={styles.videoFooter}>
+              ) : (
+                <VideoPlayer
+                  key={sectionId}
+                  videoUrl={section.videoUrl ?? ''}
+                  onProgressUpdate={setVideoWatchPercentage}
+                  minimumWatchPercentage={80}
+                />
+              )}
+
+              {isPausedForQuestion && currentPauseQuestionIndex !== null && (
+                <View style={styles.questionBlock}>
+                  <QuestionCard
+                    variant="video"
+                    question={
+                      videoPauseQuestions[currentPauseQuestionIndex].question
+                    }
+                    onAnswer={handlePauseQuestionAnswer}
+                    currentQuestion={currentPauseQuestionIndex + 1}
+                    totalQuestions={videoPauseQuestions.length}
+                  />
+                </View>
+              )}
+
+              {showInlineVideoQuestion && (
+                <View style={styles.questionBlock}>
+                  <QuestionCard
+                    variant="video"
+                    question={currentVideoQuestion}
+                    onAnswer={handleAnswer}
+                    currentQuestion={currentQuestionIndex + 1}
+                    totalQuestions={questions.length}
+                  />
+                </View>
+              )}
+
+              {showVideoContinue && (
                 <TouchableOpacity
                   style={[
                     styles.primaryButton,
-                    {
-                      backgroundColor: isQuestionLocked
-                        ? '#C1CFD7'
-                        : colors.primary,
-                    },
+                    styles.videoContinue,
+                    { backgroundColor: colors.primary },
                   ]}
                   activeOpacity={0.82}
-                  disabled={isQuestionLocked}
                   onPress={handleReadyToAnswer}
                 >
                   <Text
-                    style={[
-                      styles.primaryButtonText,
-                      {
-                        color: isQuestionLocked ? '#809CAD' : '#FDFEFF',
-                      },
-                    ]}
+                    style={[styles.primaryButtonText, { color: '#FDFEFF' }]}
                   >
-                    {t('course.readyToAnswer')}
+                    {t('common.continue')}
                   </Text>
                 </TouchableOpacity>
+              )}
 
-                {isQuestionLocked && (
-                  <Text style={styles.helperText}>
-                    {t('section.watchMore', {
-                      percent: Math.round(
-                        (hasVideoPauseQuestions ? 100 : 80) -
-                          videoWatchPercentage
-                      ),
-                    })}
-                  </Text>
-                )}
-
+              {!isPausedForQuestion && (
                 <TouchableOpacity
+                  style={styles.videoExit}
                   activeOpacity={0.74}
                   onPress={() => setIsExitModalVisible(true)}
                 >
@@ -384,39 +425,34 @@ export default function SectionLearningScreen() {
                     {t('section.exitActivity')}
                   </Text>
                 </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
+              )}
+            </ScrollView>
+          </View>
         )}
 
-        {phase === 'questions' && (
-          <ScrollView
-            contentContainerStyle={[
-              styles.questionStageContent,
-              { paddingBottom: Math.max(insets.bottom, 28) + 24 },
-            ]}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.questionBlock}>
-              {questions[currentQuestionIndex]?.type === 'image_association' ? (
-                <ImageAssociationCard
-                  question={questions[currentQuestionIndex]}
-                  onAnswer={handleAnswer}
-                  currentQuestion={currentQuestionIndex + 1}
-                  totalQuestions={questions.length}
-                  onExit={() => setIsExitModalVisible(true)}
-                />
-              ) : (
-                <QuestionCard
-                  question={questions[currentQuestionIndex]}
-                  onAnswer={handleAnswer}
-                  currentQuestion={currentQuestionIndex + 1}
-                  totalQuestions={questions.length}
-                  onExit={() => setIsExitModalVisible(true)}
-                />
-              )}
-            </View>
-          </ScrollView>
+        {phase === 'questions' && questions[currentQuestionIndex] && (
+          <View style={styles.questionStage}>
+            {questions[currentQuestionIndex]?.type === 'image_association' ? (
+              <ImageAssociationCard
+                question={questions[currentQuestionIndex]}
+                onAnswer={handleAnswer}
+                currentQuestion={currentQuestionIndex + 1}
+                totalQuestions={questions.length}
+                onExit={() => setIsExitModalVisible(true)}
+              />
+            ) : (
+              <QuestionCard
+                question={questions[currentQuestionIndex]}
+                onAnswer={handleAnswer}
+                currentQuestion={currentQuestionIndex + 1}
+                totalQuestions={questions.length}
+                courseTitle={course.title}
+                sectionTitle={section.title}
+                onExit={() => setIsExitModalVisible(true)}
+                fillHeight
+              />
+            )}
+          </View>
         )}
 
         {phase === 'results' && (
@@ -498,10 +534,7 @@ export default function SectionLearningScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.modalConfirm,
-                  { backgroundColor: colors.primary },
-                ]}
+                style={[styles.modalConfirm, { backgroundColor: '#D62B25' }]}
                 activeOpacity={0.82}
                 onPress={() => {
                   setIsExitModalVisible(false)
@@ -552,19 +585,25 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 24,
   },
-  videoContent: {
+  videoStage: {
+    flex: 1,
     paddingHorizontal: 32,
   },
-  questionStageContent: {
+  videoContent: {
+    paddingBottom: 16,
+  },
+  questionStage: {
+    flex: 1,
     paddingHorizontal: 32,
   },
   questionBlock: {
     marginTop: 24,
   },
-  videoFooter: {
-    alignItems: 'center',
+  videoContinue: {
     marginTop: 24,
-    width: '100%',
+  },
+  videoExit: {
+    alignSelf: 'flex-end',
   },
   primaryButton: {
     width: '100%',
@@ -580,14 +619,6 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: '700',
     textAlign: 'center',
-  },
-  helperText: {
-    marginTop: 12,
-    fontSize: 14,
-    lineHeight: 18,
-    color: '#4E6879',
-    textAlign: 'center',
-    width: '100%',
   },
   exitText: {
     marginTop: 28,
@@ -677,6 +708,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: '600',
     color: '#28363E',
+    textDecorationLine: 'underline',
   },
   modalConfirm: {
     minWidth: 92,

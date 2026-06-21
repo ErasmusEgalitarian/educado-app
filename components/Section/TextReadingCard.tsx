@@ -3,7 +3,13 @@ import { t } from '@/i18n/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 interface TextReadingCardProps {
   textPages: string[]
@@ -35,7 +41,7 @@ const TextReadingCard: React.FC<TextReadingCardProps> = ({
   return (
     <View style={styles.container}>
       <ScrollView
-        style={[styles.card, { backgroundColor: colors.cardBackgroundLight }]}
+        style={[styles.card, { backgroundColor: colors.primaryLight }]}
         contentContainerStyle={styles.cardContent}
         showsVerticalScrollIndicator={false}
       >
@@ -205,6 +211,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   exitText: {
+    alignSelf: 'flex-end',
     fontSize: 16,
     lineHeight: 21,
     fontWeight: '600',

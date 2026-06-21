@@ -1,11 +1,17 @@
-import { AppColors } from '@/constants/theme/AppColors'
 import { Question } from '@/data/mock-data'
 import { t } from '@/i18n/config'
 import { useAuth } from '@/contexts/AuthContext'
 import { Image as ExpoImage } from 'expo-image'
 import * as Haptics from 'expo-haptics'
 import React, { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 interface ImageAssociationCardProps {
   question: Question
@@ -22,7 +28,7 @@ const ImageAssociationCard: React.FC<ImageAssociationCardProps> = ({
   totalQuestions,
   onExit,
 }) => {
-  const colors = AppColors()
+  const insets = useSafeAreaInsets()
   const { token } = useAuth()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
@@ -65,73 +71,91 @@ const ImageAssociationCard: React.FC<ImageAssociationCardProps> = ({
 
   return (
     <View style={styles.container}>
-      {imageSource && (
-        <ExpoImage
-          source={imageSource}
-          style={styles.image}
-          contentFit="cover"
-        />
-      )}
+      <ScrollView
+        style={styles.scrollBody}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {imageSource && (
+          <ExpoImage
+            source={imageSource}
+            style={styles.image}
+            contentFit="cover"
+          />
+        )}
 
-      <Text style={styles.instruction}>{question.question}</Text>
+        <Text style={styles.instruction}>{question.question}</Text>
 
-      <Text style={styles.counter}>
-        {currentQuestion}/{totalQuestions}
-      </Text>
+        <Text style={styles.counter}>
+          {currentQuestion}/{totalQuestions}
+        </Text>
 
-      <View style={styles.grid}>
-        {pairs.map(([left, right], rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
-            {[left, right].map((word, colIndex) => {
-              const index = rowIndex * 2 + colIndex
-              const isSelected = selectedIndex === index
-              const isCorrect = index === question.correctAnswer
-              const showCorrect = hasSubmitted && isCorrect
-              const showWrong = hasSubmitted && isSelected && !isCorrect
+        <View style={styles.grid}>
+          {pairs.map(([left, right], rowIndex) => (
+            <View key={rowIndex} style={styles.row}>
+              {[left, right].map((word, colIndex) => {
+                const index = rowIndex * 2 + colIndex
+                const isSelected = selectedIndex === index
+                const isCorrect = index === question.correctAnswer
+                const showCorrect = hasSubmitted && isCorrect
+                const showWrong = hasSubmitted && isSelected && !isCorrect
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.optionCard,
-                    showCorrect && styles.optionCorrect,
-                    showWrong && styles.optionWrong,
-                  ]}
-                  onPress={() => handleSelect(index)}
-                  disabled={hasSubmitted}
-                  activeOpacity={0.78}
-                >
-                  <Text
+                return (
+                  <TouchableOpacity
+                    key={index}
                     style={[
-                      styles.optionText,
-                      (showCorrect || showWrong) && styles.optionTextSelected,
+                      styles.optionCard,
+                      showCorrect && styles.optionCorrect,
+                      showWrong && styles.optionWrong,
                     ]}
+                    onPress={() => handleSelect(index)}
+                    disabled={hasSubmitted}
+                    activeOpacity={0.78}
                   >
-                    {word}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        ))}
-      </View>
+                    <Text
+                      style={[
+                        styles.optionText,
+                        (showCorrect || showWrong) && styles.optionTextSelected,
+                      ]}
+                    >
+                      {word}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
 
-      <View style={styles.footer}>
-        {onExit && (
+      {onExit && (
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom, 16) },
+          ]}
+        >
           <TouchableOpacity activeOpacity={0.74} onPress={onExit}>
             <Text style={styles.exitText}>{t('section.exitActivity')}</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     width: '100%',
+  },
+  scrollBody: {
+    flex: 1,
+  },
+  scrollContent: {
     alignItems: 'center',
     gap: 24,
+    paddingBottom: 16,
   },
   image: {
     width: 325,
@@ -197,7 +221,7 @@ const styles = StyleSheet.create({
   footer: {
     width: '100%',
     alignItems: 'flex-end',
-    marginTop: 12,
+    paddingTop: 12,
   },
   exitText: {
     fontSize: 16,
