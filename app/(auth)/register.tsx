@@ -28,12 +28,11 @@ export default function RegisterScreen() {
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
       Alert.alert(t('common.error'), t('auth.registerFillRequired'))
       return
     }
@@ -43,8 +42,7 @@ export default function RegisterScreen() {
       await registerStudent({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim() || undefined,
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
       })
       // After successful registration, state becomes isAuthenticated=true
       // and the _layout.tsx Redirect will handle navigation.
@@ -53,7 +51,7 @@ export default function RegisterScreen() {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 409) {
-          Alert.alert(t('common.error'), t('auth.emailAlreadyExists'))
+          Alert.alert(t('common.error'), t('auth.phoneAlreadyExists'))
         } else if (error.status === 422) {
           Alert.alert(t('common.error'), t('auth.validationError'))
         } else {
@@ -154,32 +152,8 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
-              {t('auth.emailOptional')}
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: colors.textPrimary,
-                  backgroundColor: colors.backgroundPrimary,
-                  borderColor: colors.border,
-                },
-              ]}
-              placeholder={t('auth.emailPlaceholder')}
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
-              {t('auth.phoneOptional')}
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              {t('auth.phone')} *
             </Text>
             <TextInput
               style={[

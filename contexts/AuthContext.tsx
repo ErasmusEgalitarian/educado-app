@@ -5,7 +5,7 @@ import {
   apiLogin,
   apiStudentRegister,
   apiStudentDeviceLogin,
-  apiStudentEmailLogin,
+  apiStudentPhoneLogin,
   apiGetStudentProfile,
   getOrCreateDeviceId,
   getStoredToken,
@@ -35,12 +35,11 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>
-  loginByEmail: (email: string) => Promise<void>
+  loginByPhone: (phone: string) => Promise<void>
   registerStudent: (data: {
     firstName: string
     lastName: string
-    email?: string
-    phone?: string
+    phone: string
     dateOfBirth?: string
   }) => Promise<void>
   logout: () => Promise<void>
@@ -159,9 +158,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     })
   }, [])
 
-  // Login by email only — find existing student account
-  const loginByEmail = useCallback(async (email: string) => {
-    const response = await apiStudentEmailLogin(email)
+  // Login by phone only — find existing student account
+  const loginByPhone = useCallback(async (phone: string) => {
+    const response = await apiStudentPhoneLogin(phone)
 
     await storeToken(response.accessToken)
 
@@ -178,7 +177,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       id: response.user.id,
       firstName: response.user.firstName,
       lastName: response.user.lastName,
-      email,
+      email: '',
       username: null,
       avatarMediaId,
     }
@@ -198,8 +197,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     async (data: {
       firstName: string
       lastName: string
-      email?: string
-      phone?: string
+      phone: string
       dateOfBirth?: string
     }) => {
       const deviceId = await getOrCreateDeviceId()
@@ -209,7 +207,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         id: response.user.id,
         firstName: response.user.firstName,
         lastName: response.user.lastName,
-        email: data.email || '',
+        email: '',
         username: null,
         avatarMediaId: null,
       }
@@ -230,8 +228,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const logout = useCallback(async () => {
     await removeToken()
     await removeUser()
-    try { await clearAllProgress() } catch {}
-    try { await deleteAllDownloads() } catch {}
+    try {
+      await clearAllProgress()
+    } catch {
+      // best-effort cleanup; ignore failures on logout
+    }
+    try {
+      await deleteAllDownloads()
+    } catch {
+      // best-effort cleanup; ignore failures on logout
+    }
     setState({
       user: null,
       token: null,
@@ -249,7 +255,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, loginByEmail, registerStudent, logout, refreshUser }}
+      value={{
+        ...state,
+        login,
+        loginByPhone,
+        registerStudent,
+        logout,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
