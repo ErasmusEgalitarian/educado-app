@@ -254,5 +254,14 @@
     "message": "Você está offline. Acesse seus cursos baixados para continuar estudando.",
     "goToDownloads": "Ver Meus Downloads",
     "retry": "Tentar Novamente"
+  },
+  "video": {
+    "slowConnection": "Sua conexão está lenta",
+    "slowConnectionHint": "O vídeo está demorando mais que o normal para carregar. Verifique sua internet e tente de novo.",
+    "buffering": "Armazenando em buffer...",
+    "loadError": "Não foi possível carregar o vídeo",
+    "loadErrorHint": "Verifique sua conexão e tente de novo, ou saia para continuar.",
+    "retry": "Tentar novamente",
+    "exit": "Sair"
   }
 }

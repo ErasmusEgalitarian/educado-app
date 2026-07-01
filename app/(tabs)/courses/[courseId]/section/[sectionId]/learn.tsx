@@ -363,6 +363,7 @@ export default function SectionLearningScreen() {
                   isPaused={isPausedForQuestion}
                   onResume={() => setIsPausedForQuestion(false)}
                   onVideoComplete={handleVideoComplete}
+                  onExit={() => setIsExitModalVisible(true)}
                 />
               ) : (
                 <VideoPlayer
@@ -370,6 +371,7 @@ export default function SectionLearningScreen() {
                   videoUrl={section.videoUrl ?? ''}
                   onProgressUpdate={setVideoWatchPercentage}
                   minimumWatchPercentage={80}
+                  onExit={() => setIsExitModalVisible(true)}
                 />
               )}
 
