@@ -254,5 +254,14 @@
     "message": "You are offline. Access your downloaded courses to keep studying.",
     "goToDownloads": "View My Downloads",
     "retry": "Try Again"
+  },
+  "video": {
+    "slowConnection": "Your connection is slow",
+    "slowConnectionHint": "The video is taking longer than usual to load. Check your internet and try again.",
+    "buffering": "Buffering...",
+    "loadError": "Could not load the video",
+    "loadErrorHint": "Check your internet connection and try again, or exit to keep going.",
+    "retry": "Try again",
+    "exit": "Exit"
   }
 }

@@ -4,8 +4,9 @@ import { useWebVideoSource } from '@/hooks/useWebVideoSource'
 import { t } from '@/i18n/config'
 import { getAuthHeaders } from '@/services/api'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { VideoView, useVideoPlayer } from 'expo-video'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -15,11 +16,20 @@ import {
   View,
 } from 'react-native'
 
+// If the video never leaves loading/idle within this window we assume the
+// connection is too slow and surface a recoverable "slow connection" screen.
+// This is the PRIMARY safety net: expo-video's `statusChange` can get stuck on
+// 'loading' and never emit an 'error' when the network drops (expo/expo#33738).
+const LOAD_TIMEOUT_MS = 12000
+
+type VideoError = 'slow' | 'load'
+
 interface VideoPlayerProps {
   videoUrl: string
   onProgressUpdate?: (percentage: number) => void
   onComplete?: () => void
   minimumWatchPercentage?: number
+  onExit?: () => void
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -27,19 +37,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onProgressUpdate,
   onComplete,
   minimumWatchPercentage = 80,
+  onExit,
 }) => {
   const colors = AppColors()
+  const router = useRouter()
   const { token } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [videoError, setVideoError] = useState<VideoError | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
   const [hasCompletedMinimum, setHasCompletedMinimum] = useState(false)
   const [hasEnded, setHasEnded] = useState(false)
+  // True once the video has actually started playing at least once, so a later
+  // return to 'loading' can be told apart (buffering) from the initial load.
+  const hasStartedRef = useRef(false)
 
   // If no video URL, show placeholder and auto-complete
   const hasVideo = !!videoUrl && videoUrl.length > 0
 
   // On web, fetch video as blob (HTML5 <video> can't send custom headers)
-  const webBlobUrl = useWebVideoSource(
+  const {
+    blobUrl: webBlobUrl,
+    status: webStatus,
+    retry: webRetry,
+  } = useWebVideoSource(
     hasVideo && videoUrl.startsWith('http') ? videoUrl : null,
     token
   )
@@ -70,6 +91,63 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [hasVideo, onComplete])
 
+  // React to player status transitions. `statusChange` is more responsive than
+  // polling for catching hard errors and mid-playback buffering, but it is not
+  // reliable on its own (it can stall on 'loading'), so the polling interval
+  // below and the load timeout act as backstops.
+  useEffect(() => {
+    if (!player || !hasVideo) return
+
+    const subscription = player.addListener('statusChange', ({ status }) => {
+      if (status === 'error') {
+        setVideoError('load')
+        setIsLoading(false)
+        setIsBuffering(false)
+        return
+      }
+      if (status === 'readyToPlay') {
+        hasStartedRef.current = true
+        setIsLoading(false)
+        setIsBuffering(false)
+        // Auto-recover the slow-connection screen if the video catches up.
+        setVideoError((prev) => (prev === 'slow' ? null : prev))
+        return
+      }
+      if (status === 'loading' && hasStartedRef.current) {
+        setIsBuffering(true)
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [player, hasVideo])
+
+  // Web-only: surface a fetch failure as a recoverable load error.
+  useEffect(() => {
+    if (webStatus === 'error') {
+      setVideoError('load')
+      setIsLoading(false)
+      setIsBuffering(false)
+    }
+  }, [webStatus])
+
+  // Load timeout: if the video is still stuck loading after LOAD_TIMEOUT_MS and
+  // never started playing, flip to the "slow connection" screen (retry + exit).
+  useEffect(() => {
+    if (!player || !hasVideo) return
+    if (videoError || hasStartedRef.current) return
+
+    const timer = setTimeout(() => {
+      if (!hasStartedRef.current) {
+        setVideoError('slow')
+        setIsLoading(false)
+      }
+    }, LOAD_TIMEOUT_MS)
+
+    return () => clearTimeout(timer)
+  }, [player, hasVideo, videoError, retryKey])
+
   // Auto-play on mount, pause on unmount
   useEffect(() => {
     if (!player || !hasVideo) return
@@ -92,18 +170,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const interval = setInterval(() => {
       try {
         if (player.status === 'error') {
-          setError(t('errors.loadSection'))
+          setVideoError('load')
           setIsLoading(false)
+          setIsBuffering(false)
           return
         }
 
         if (player.status === 'loading' || player.status === 'idle') {
+          if (hasStartedRef.current) {
+            setIsBuffering(true)
+          }
           return
         }
 
+        // readyToPlay from here on.
+        hasStartedRef.current = true
         if (isLoading) {
           setIsLoading(false)
         }
+        setIsBuffering(false)
+        setVideoError((prev) => (prev === 'slow' ? null : prev))
 
         const duration = player.duration
         const currentTime = player.currentTime
@@ -147,7 +233,49 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     hasCompletedMinimum,
   ])
 
-  // No video — show placeholder
+  const handleExit = useCallback(() => {
+    if (onExit) {
+      onExit()
+    } else {
+      // Fallback so the user is never trapped when no handler is wired.
+      router.back()
+    }
+  }, [onExit, router])
+
+  const handleRetry = useCallback(() => {
+    hasStartedRef.current = false
+    setVideoError(null)
+    setIsBuffering(false)
+    setIsLoading(true)
+    if (Platform.OS === 'web') {
+      // Re-fetch the blob; the new URL flows back through `videoSource` and the
+      // player reloads automatically.
+      webRetry()
+    } else if (player && videoSource) {
+      try {
+        player
+          .replaceAsync(videoSource)
+          .then(() => {
+            try {
+              player.play()
+            } catch {
+              // Ignore if the player was released mid-retry
+            }
+          })
+          .catch(() => {
+            setVideoError('load')
+            setIsLoading(false)
+          })
+      } catch {
+        setVideoError('load')
+        setIsLoading(false)
+      }
+    }
+    // Re-arm the load timeout for this fresh attempt.
+    setRetryKey((key) => key + 1)
+  }, [player, videoSource, webRetry])
+
+  // No video, show placeholder
   if (!hasVideo) {
     return (
       <View
@@ -167,20 +295,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     )
   }
 
-  if (error) {
+  if (videoError) {
+    const isSlow = videoError === 'slow'
     return (
       <View
         style={[styles.container, { backgroundColor: colors.primaryLight }]}
       >
         <View style={styles.errorContainer}>
           <Ionicons
-            name="alert-circle-outline"
+            name={isSlow ? 'cloud-offline-outline' : 'alert-circle-outline'}
             size={48}
             color={colors.error}
           />
           <Text style={[styles.errorText, { color: colors.error }]}>
-            {t('errors.loadSection')}
+            {isSlow ? t('video.slowConnection') : t('video.loadError')}
           </Text>
+          <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
+            {isSlow ? t('video.slowConnectionHint') : t('video.loadErrorHint')}
+          </Text>
+
+          <View style={styles.errorActions}>
+            <TouchableOpacity
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              activeOpacity={0.82}
+              onPress={handleRetry}
+            >
+              <Ionicons name="refresh" size={18} color="#FDFEFF" />
+              <Text style={styles.retryButtonText}>{t('video.retry')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.exitButton}
+              activeOpacity={0.74}
+              onPress={handleExit}
+            >
+              <Text style={[styles.exitButtonText, { color: colors.error }]}>
+                {t('video.exit')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     )
@@ -219,6 +372,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </TouchableOpacity>
       )}
 
+      {isBuffering && !hasEnded && (
+        <View style={styles.bufferingOverlay}>
+          <ActivityIndicator size="small" color="#FDFEFF" />
+          <Text style={styles.bufferingText}>{t('video.buffering')}</Text>
+        </View>
+      )}
+
       {isLoading && (
         <View
           style={[
@@ -253,6 +413,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  bufferingOverlay: {
+    position: 'absolute',
+    top: 12,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(20, 27, 31, 0.7)',
+  },
+  bufferingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FDFEFF',
+  },
   replayOverlay: {
     ...StyleSheet.absoluteFill,
     justifyContent: 'center',
@@ -281,6 +458,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 12,
     textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  errorActions: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+    gap: 12,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FDFEFF',
+  },
+  exitButton: {
+    paddingVertical: 8,
+  },
+  exitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   noVideoContainer: {
     flex: 1,
