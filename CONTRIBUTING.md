@@ -146,9 +146,14 @@ There is no automated test suite in this repository. Run both checks below
 before pushing. This is the same checklist maintainers run on review:
 
 ```bash
-npm run lint       # ESLint 9 flat config (expo + google base + prettier)
+npm run lint       # ESLint 9 flat config, see eslint.config.js
 npx tsc --noEmit   # TypeScript strict type check, no emit
 ```
+
+The flat config in `eslint.config.js` composes `@eslint/js` recommended,
+`typescript-eslint` recommended and `eslint-config-prettier`, plus the
+`react`, `react-hooks` and `react-native` plugins and Prettier enforced as a
+rule through `eslint-plugin-prettier`.
 
 Auto-fix formatting instead of hand-formatting:
 
