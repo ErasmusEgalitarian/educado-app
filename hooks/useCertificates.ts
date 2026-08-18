@@ -1,7 +1,4 @@
-import {
-  ApiCertificate,
-  apiGetStudentCertificates,
-} from '@/services/api'
+import { ApiCertificate, apiGetStudentCertificates } from '@/services/api'
 import { useQuery } from '@tanstack/react-query'
 
 /**

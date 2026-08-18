@@ -23,11 +23,7 @@ export default function CertificatesScreen() {
   const insets = useSafeAreaInsets()
   const { currentLanguage } = useLanguage()
 
-  const {
-    data: certificates = [],
-    isLoading,
-    refetch,
-  } = useCertificates()
+  const { data: certificates = [], isLoading, refetch } = useCertificates()
 
   useFocusEffect(
     useCallback(() => {
@@ -99,9 +95,7 @@ export default function CertificatesScreen() {
           </View>
         ) : (
           <>
-            <Text
-              style={[styles.countText, { color: colors.textSecondary }]}
-            >
+            <Text style={[styles.countText, { color: colors.textSecondary }]}>
               {t('profile.certificatesEarned', { count: certificates.length })}
             </Text>
 
@@ -119,14 +113,20 @@ export default function CertificatesScreen() {
                 activeOpacity={0.7}
               >
                 <View
-                  style={[styles.certBadge, { backgroundColor: colors.primary }]}
+                  style={[
+                    styles.certBadge,
+                    { backgroundColor: colors.primary },
+                  ]}
                 >
                   <Ionicons name="trophy" size={28} color="#FFFFFF" />
                 </View>
 
                 <View style={styles.certInfo}>
                   <Text
-                    style={[styles.certCourseName, { color: colors.textPrimary }]}
+                    style={[
+                      styles.certCourseName,
+                      { color: colors.textPrimary },
+                    ]}
                     numberOfLines={2}
                   >
                     {cert.courseName}
@@ -134,7 +134,9 @@ export default function CertificatesScreen() {
                   <Text
                     style={[styles.certDate, { color: colors.textSecondary }]}
                   >
-                    {t('profile.completedAt', { date: formatDate(cert.completedAt) })}
+                    {t('profile.completedAt', {
+                      date: formatDate(cert.completedAt),
+                    })}
                   </Text>
                 </View>
 

@@ -39,7 +39,8 @@ export default function ProfileScreen() {
   const level = gamification?.currentLevel ?? 1
   const xpProgress = gamification?.xpProgress ?? 0
   const xpNeeded = gamification?.xpNeeded ?? 1
-  const levelProgress = xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
+  const levelProgress =
+    xpNeeded > 0 ? Math.min((xpProgress / xpNeeded) * 100, 100) : 0
 
   const handleMenuPress = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -75,16 +76,20 @@ export default function ProfileScreen() {
         logout()
       }
     } else {
-      Alert.alert(t('auth.logoutConfirmTitle'), t('auth.logoutConfirmMessage'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            await logout()
+      Alert.alert(
+        t('auth.logoutConfirmTitle'),
+        t('auth.logoutConfirmMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('auth.logout'),
+            style: 'destructive',
+            onPress: async () => {
+              await logout()
+            },
           },
-        },
-      ])
+        ]
+      )
     }
   }
 
@@ -136,7 +141,10 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           {user?.avatarMediaId ? (
             <Image
-              source={{ uri: getImageUrl(user.avatarMediaId), headers: getAuthHeaders(token) }}
+              source={{
+                uri: getImageUrl(user.avatarMediaId),
+                headers: getAuthHeaders(token),
+              }}
               style={styles.avatar}
               contentFit="cover"
             />
@@ -223,7 +231,9 @@ export default function ProfileScreen() {
                 {languageLabel}
               </Text>
             </View>
-            <Text style={[styles.languageSwitchText, { color: colors.primary }]}>
+            <Text
+              style={[styles.languageSwitchText, { color: colors.primary }]}
+            >
               {switchToLabel}
             </Text>
           </TouchableOpacity>

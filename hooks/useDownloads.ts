@@ -21,7 +21,9 @@ export function useDownloadCourse() {
     onSuccess: (_data, courseId) => {
       Alert.alert(t('certificate.success'), t('downloads.downloadSuccess'))
       queryClient.invalidateQueries({ queryKey: ['downloads'] })
-      queryClient.invalidateQueries({ queryKey: ['download-manifest', courseId] })
+      queryClient.invalidateQueries({
+        queryKey: ['download-manifest', courseId],
+      })
     },
     onError: () => {
       Alert.alert(t('common.error'), t('downloads.downloadError'))
@@ -56,7 +58,9 @@ export function useDeleteDownload() {
     mutationFn: (courseId: string) => deleteCourseDownload(courseId),
     onSuccess: (_data, courseId) => {
       queryClient.invalidateQueries({ queryKey: ['downloads'] })
-      queryClient.invalidateQueries({ queryKey: ['download-manifest', courseId] })
+      queryClient.invalidateQueries({
+        queryKey: ['download-manifest', courseId],
+      })
     },
   })
 }
