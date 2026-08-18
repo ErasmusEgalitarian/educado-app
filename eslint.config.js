@@ -58,6 +58,8 @@ module.exports = tseslint.config(
     ignores: [
       'node_modules/**',
       '.expo/**',
+      'android/**',
+      'ios/**',
       'build/**',
       'dist/**',
       '*.config.js',
