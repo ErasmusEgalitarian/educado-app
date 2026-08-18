@@ -71,7 +71,12 @@ function transformSectionActivity(activity: ApiActivity): Activity {
   return {
     id: activity.id,
     title: activity.title || undefined,
-    type: activity.type === 'video_pause' ? 'video_pause' : activity.type === 'image_association' ? 'image_association' : effectiveType,
+    type:
+      activity.type === 'video_pause'
+        ? 'video_pause'
+        : activity.type === 'image_association'
+          ? 'image_association'
+          : effectiveType,
     pauseTimestamp: activity.pauseTimestamp ?? undefined,
     textPages: activity.textPages ?? undefined,
     question: activity.question ?? undefined,
@@ -93,7 +98,11 @@ function hasQuestionContent(activity: ApiActivity): boolean {
 
 // Check if an activity is a question (MC, TF, image_association, or video_pause final question without timestamp)
 function isRegularQuestion(a: ApiActivity): boolean {
-  if (a.type === 'multiple_choice' || a.type === 'true_false' || a.type === 'image_association') {
+  if (
+    a.type === 'multiple_choice' ||
+    a.type === 'true_false' ||
+    a.type === 'image_association'
+  ) {
     return true
   }
   // video_pause without pauseTimestamp = "final question" shown after video
