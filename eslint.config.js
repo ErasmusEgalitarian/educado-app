@@ -55,6 +55,27 @@ module.exports = tseslint.config(
     },
   },
   {
+    // CommonJS config-style plugins (e.g. Expo config plugins) run in
+    // Node, not the app runtime, so they need Node globals and are
+    // allowed to use require().
+    files: ['plugins/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       '.expo/**',
