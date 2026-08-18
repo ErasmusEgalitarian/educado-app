@@ -1,0 +1,24 @@
+name: CI
+on: pull_request
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set Up Node
+        uses: actions/setup-node@v4
+        with:
+          # Alinhado com o Node 20 do devshell (flake.nix), exigido por
+          # @react-native/assets-registry >= 20.19.4. Node 20 é LTS ativa.
+          node-version: '20'
+          cache: npm
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+      - name: Run Typecheck
+        run: npx tsc --noEmit
+      - name: Run Tests
+        run: npm run test

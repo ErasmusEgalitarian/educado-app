@@ -36,7 +36,7 @@ function RootNavigator() {
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)')
     }
-  }, [isAuthenticated, isLoading, segments, pathname])
+  }, [isAuthenticated, isLoading, segments, pathname, router])
 
   if (isLoading) {
     return (

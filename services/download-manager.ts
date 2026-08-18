@@ -1,11 +1,7 @@
 import { API_BASE_URL } from '@/utils/api-config'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as FileSystem from 'expo-file-system/legacy'
-import {
-  ApiCourse,
-  apiGetCatalogCourseDetail,
-  getStoredToken,
-} from './api'
+import { ApiCourse, apiGetCatalogCourseDetail, getStoredToken } from './api'
 
 const DOWNLOADS_KEY = '@educado:downloads'
 const OFFLINE_COURSE_PREFIX = '@educado:offline-course:'
@@ -110,18 +106,34 @@ export async function downloadCourse(
   )
 
   // Build list of media to download
-  const mediaToDownload: { mediaId: string; type: 'video' | 'image'; ext: string }[] = []
+  const mediaToDownload: {
+    mediaId: string
+    type: 'video' | 'image'
+    ext: string
+  }[] = []
 
   if (course.imageMediaId) {
-    mediaToDownload.push({ mediaId: course.imageMediaId, type: 'image', ext: 'jpg' })
+    mediaToDownload.push({
+      mediaId: course.imageMediaId,
+      type: 'image',
+      ext: 'jpg',
+    })
   }
 
   for (const section of course.sections ?? []) {
     if (section.videoMediaId) {
-      mediaToDownload.push({ mediaId: section.videoMediaId, type: 'video', ext: 'mp4' })
+      mediaToDownload.push({
+        mediaId: section.videoMediaId,
+        type: 'video',
+        ext: 'mp4',
+      })
     }
     if (section.thumbnailMediaId) {
-      mediaToDownload.push({ mediaId: section.thumbnailMediaId, type: 'image', ext: 'jpg' })
+      mediaToDownload.push({
+        mediaId: section.thumbnailMediaId,
+        type: 'image',
+        ext: 'jpg',
+      })
     }
   }
 
