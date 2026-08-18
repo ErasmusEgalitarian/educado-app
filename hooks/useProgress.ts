@@ -84,7 +84,8 @@ export function useSaveSectionProgress() {
       sectionId: string
       score: number
       totalQuestions: number
-    }) => apiSaveStudentSectionProgress(courseId, sectionId, score, totalQuestions),
+    }) =>
+      apiSaveStudentSectionProgress(courseId, sectionId, score, totalQuestions),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['enrollment-detail', variables.courseId],

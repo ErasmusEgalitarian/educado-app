@@ -19,15 +19,12 @@ export function useGetCertificate(courseId: string) {
         return null
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/certificates/${username}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      const response = await fetch(`${API_BASE_URL}/certificates/${username}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -37,7 +34,9 @@ export function useGetCertificate(courseId: string) {
       }
 
       const certificates = (await response.json()) as BackendCertificate[]
-      const certificate = certificates.find((cert) => cert.courseId === courseId)
+      const certificate = certificates.find(
+        (cert) => cert.courseId === courseId
+      )
       return certificate || null
     },
     enabled: !!courseId,

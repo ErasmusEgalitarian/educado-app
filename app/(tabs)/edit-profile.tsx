@@ -44,7 +44,9 @@ export default function EditProfileScreen() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [avatarUri, setAvatarUri] = useState<string | null>(null)
   const [avatarMediaId, setAvatarMediaId] = useState<string | null>(null)
-  const [newAvatarLocalUri, setNewAvatarLocalUri] = useState<string | null>(null)
+  const [newAvatarLocalUri, setNewAvatarLocalUri] = useState<string | null>(
+    null
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -138,11 +140,18 @@ export default function EditProfileScreen() {
     }
   }
 
-  const userInitials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'AA'
+  const userInitials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'AA'
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.backgroundPrimary }]}>
+      <View
+        style={[
+          styles.container,
+          styles.center,
+          { backgroundColor: colors.backgroundPrimary },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
@@ -151,12 +160,18 @@ export default function EditProfileScreen() {
   return (
     <KeyboardAvoidingView
       key={currentLanguage}
-      style={[styles.container, { backgroundColor: colors.backgroundPrimary, paddingTop: insets.top }]}
+      style={[
+        styles.container,
+        { backgroundColor: colors.backgroundPrimary, paddingTop: insets.top },
+      ]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
@@ -166,7 +181,10 @@ export default function EditProfileScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, 24) + 100 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: Math.max(insets.bottom, 24) + 100 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -174,13 +192,24 @@ export default function EditProfileScreen() {
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handlePickImage} activeOpacity={0.7}>
             {avatarUri ? (
-              <Image source={{ uri: avatarUri, headers: avatarUri.startsWith('http') ? getAuthHeaders(token) : undefined }} style={styles.avatar} contentFit="cover" />
+              <Image
+                source={{
+                  uri: avatarUri,
+                  headers: avatarUri.startsWith('http')
+                    ? getAuthHeaders(token)
+                    : undefined,
+                }}
+                style={styles.avatar}
+                contentFit="cover"
+              />
             ) : (
               <View style={[styles.avatar, { backgroundColor: '#E0F2F1' }]}>
                 <Text style={styles.avatarText}>{userInitials}</Text>
               </View>
             )}
-            <View style={[styles.cameraIcon, { backgroundColor: colors.primary }]}>
+            <View
+              style={[styles.cameraIcon, { backgroundColor: colors.primary }]}
+            >
               <Ionicons name="camera" size={16} color="#FFF" />
             </View>
           </TouchableOpacity>
@@ -234,7 +263,15 @@ export default function EditProfileScreen() {
       </ScrollView>
 
       {/* Save button */}
-      <View style={[styles.footer, { backgroundColor: colors.cardBackground, paddingBottom: Math.max(insets.bottom, 24) }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: colors.cardBackground,
+            paddingBottom: Math.max(insets.bottom, 24),
+          },
+        ]}
+      >
         <TouchableOpacity
           style={[styles.saveButton, { backgroundColor: colors.primary }]}
           onPress={handleSave}
@@ -244,7 +281,9 @@ export default function EditProfileScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
+            <Text style={styles.saveButtonText}>
+              {t('profile.saveChanges')}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -253,7 +292,12 @@ export default function EditProfileScreen() {
 }
 
 function FieldInput({
-  label, value, onChangeText, placeholder, keyboardType, colors,
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  colors,
 }: {
   label: string
   value: string
@@ -264,9 +308,18 @@ function FieldInput({
 }) {
   return (
     <View style={fieldStyles.container}>
-      <Text style={[fieldStyles.label, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[fieldStyles.label, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
       <TextInput
-        style={[fieldStyles.input, { color: colors.textPrimary, backgroundColor: colors.cardBackground, borderColor: '#E5E7EB' }]}
+        style={[
+          fieldStyles.input,
+          {
+            color: colors.textPrimary,
+            backgroundColor: colors.cardBackground,
+            borderColor: '#E5E7EB',
+          },
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -281,38 +334,79 @@ function FieldInput({
 const fieldStyles = StyleSheet.create({
   container: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  input: { fontSize: 16, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1 },
+  input: {
+    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
 })
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 16, paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
-  backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontWeight: '700', flex: 1, textAlign: 'center', marginHorizontal: 8 },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  },
   scroll: { padding: 24 },
   avatarSection: { alignItems: 'center', marginBottom: 32 },
-  avatar: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
   avatarText: { fontSize: 36, fontWeight: '700', color: '#00796B' },
   cameraIcon: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 32, height: 32, borderRadius: 16,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#FFF',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
   changePhotoText: { fontSize: 15, fontWeight: '600', marginTop: 10 },
   fields: {},
   footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1, shadowRadius: 8, elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   saveButton: {
-    paddingVertical: 16, borderRadius: 12, alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
   },
   saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 })

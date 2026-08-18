@@ -21,7 +21,13 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const TAG_KEYS = ['tagContent', 'tagTeacher', 'tagPractice', 'tagMaterial', 'tagPace'] as const
+const TAG_KEYS = [
+  'tagContent',
+  'tagTeacher',
+  'tagPractice',
+  'tagMaterial',
+  'tagPace',
+] as const
 
 export default function ReviewScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>()
@@ -53,7 +59,9 @@ export default function ReviewScreen() {
   const handleTagPress = (key: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelectedTagKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key].slice(0, 5)
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key].slice(0, 5)
     )
   }
 
@@ -150,7 +158,9 @@ export default function ReviewScreen() {
                 style={[
                   styles.tag,
                   {
-                    backgroundColor: isSelected ? colors.primary : 'transparent',
+                    backgroundColor: isSelected
+                      ? colors.primary
+                      : 'transparent',
                     borderColor: isSelected ? colors.primary : '#D1D5DB',
                   },
                 ]}
