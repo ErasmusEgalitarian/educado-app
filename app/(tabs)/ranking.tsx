@@ -79,7 +79,10 @@ export default function RankingScreen() {
     }, [refetch])
   )
 
-  const entries = leaderboard?.entries ?? []
+  const entries = useMemo(
+    () => leaderboard?.entries ?? [],
+    [leaderboard?.entries]
+  )
   const userRank = leaderboard?.userRank
 
   const { top3, listEntries } = useMemo(() => {
